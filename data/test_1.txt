@@ -1,0 +1,15 @@
+milk,bread,butter
+milk,bread
+milk,diapers,beer,eggs
+bread,butter,jam
+milk,bread,butter,jam
+diapers,beer
+milk,diapers,bread,beer
+bread,eggs
+milk,bread,eggs
+butter,jam
+milk,butter
+bread,butter
+milk,bread,diapers
+beer,diapers,chips
+milk,bread,butter,eggs
