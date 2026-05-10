@@ -1,5 +1,4 @@
-import collections
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import List, Dict, Tuple, Optional
 import numpy as np
 
@@ -24,10 +23,13 @@ class FPGrowth:
             raise ValueError("min_sup should be a value between 0 and 1")
 
         self.min_sup = min_sup
+        self.min_sup_count = 0
         self.supports_table = defaultdict(int)
 
         self.root = FPNode(None)
         self.nodes_table = {}
+
+        self.roads = {}
 
     def __insert_item(self, item: str, parent: FPNode):
 
@@ -46,11 +48,13 @@ class FPGrowth:
             for item in transaction.items:
                 self.supports_table[item] += 1
 
+        self.min_sup_count = int(np.ceil(self.min_sup * len(transactions)))
+
         # step 2: filter out items that do not meet the minimum support
         self.supports_table = {
             item: count
             for item, count in self.supports_table.items()
-            if count >= self.min_sup * len(transactions)
+            if count >= self.min_sup_count
         }
 
         # step 3: sort items in transactions by support count
@@ -67,7 +71,7 @@ class FPGrowth:
             for item in transaction.items:
                 root = self.__insert_item(item, root)
 
-        # step 5: build the nodes table
+        # step 5: build the nodes table for faster lookup during mining
         self.nodes_table = defaultdict(list)
         nodes_to_visit = [child for child in self.root.children]
         while nodes_to_visit:
@@ -106,3 +110,59 @@ class FPGrowth:
         for i, child in enumerate(node.children):
             is_last_child = i == len(node.children) - 1
             self.visualize_tree(child, new_prefix, is_last_child, is_root=False)
+
+    def get_frequent_itemsets(self) -> Dict[Tuple[str, ...], int]:
+        """
+        returns:
+        {
+            ('O',): 3,
+            ('O', 'K'): 2,
+            ('O', 'E'): 2,
+            ('O', 'K', 'E'): 1,
+            ...
+        }
+        """
+        from itertools import combinations
+
+        unique_items = set(self.supports_table.keys())
+        frequent_itemsets = {}
+
+        for item in unique_items:
+            roads = self.mine_roads(item)
+            if not roads:
+                continue
+
+            # support of the singleton item (sum of counts of all its nodes)
+            support_item = sum(roads.values())
+            if support_item >= self.min_sup_count:
+                frequent_itemsets[(item,)] = support_item
+
+            # count occurrences of other items in the conditional pattern base
+            node_counter = Counter()
+            for road, count in roads.items():
+                for node in road:
+                    node_counter[node] += count
+
+            # keep only nodes that themselves meet min support in this conditional base
+            valid_nodes = [
+                node for node, cnt in node_counter.items() if cnt >= self.min_sup_count
+            ]
+            if not valid_nodes:
+                continue
+
+            # generate all non-empty subsets of valid nodes and compute support for each
+            for r in range(1, len(valid_nodes) + 1):
+                for subset in combinations(valid_nodes, r):
+                    # support for item + subset = sum of counts of roads that contain all subset nodes
+                    s = 0
+                    for road, count in roads.items():
+                        if all(node in road for node in subset):
+                            s += count
+
+                    if s >= self.min_sup_count:
+                        itemset = tuple(sorted(list(subset) + [item]))
+                        # keep the maximum support if computed multiple times
+                        prev = frequent_itemsets.get(itemset, 0)
+                        frequent_itemsets[itemset] = max(prev, s)
+
+        return frequent_itemsets
