@@ -16,7 +16,10 @@ class DataLoader:
         if "{" in clean_line and "}" in clean_line:
             clean_line = clean_line[clean_line.find("{") + 1 : clean_line.rfind("}")]
 
-        return [item.strip() for item in clean_line.split(",") if item.strip()]
+        if "," in clean_line:
+            return [item.strip() for item in clean_line.split(",") if item.strip()]
+
+        return clean_line.split()
 
     def load_transactions(self):
         with open(self.file_path, "r", encoding="utf-8") as f:

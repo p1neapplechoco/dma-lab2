@@ -61,8 +61,7 @@ class FPGrowth:
         for transaction in transactions:
             transaction.items = sorted(
                 [item for item in transaction.items if item in self.supports_table],
-                key=lambda x: self.supports_table[x],
-                reverse=True,
+                key=lambda x: (-self.supports_table[x], x),
             )
 
         # step 4: build the fp-tree
