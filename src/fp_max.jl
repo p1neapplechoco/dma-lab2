@@ -9,10 +9,52 @@ function fit!(model::FPMax, transactions)::FPMax
     transaction_list = collect(transactions)
     model.transactions = [Set(transaction.items) for transaction in transaction_list]
 
-    sorted_transactions = [Transaction(sort(copy(transaction.items))) for transaction in transaction_list]
-    fit!(model.growth, sorted_transactions)
+    for transaction in transaction_list
+        transaction.items = sort(transaction.items)
+    end
 
+    fit!(model.growth, transaction_list)
     return model
+end
+
+function simple_get_maximal_itemsets(model::FPMax)::Dict{Tuple{Vararg{String}}, Int}
+    if isempty(model.transactions)
+        return Dict{Tuple{Vararg{String}}, Int}()
+    end
+
+    frequent_itemsets = Dict{Tuple{Vararg{String}}, Int}()
+    unique_items = sort(collect(union(model.transactions...)))
+
+    for size in 1:length(unique_items)
+        for itemset_vector in combinations(unique_items, size)
+            itemset_set = Set(itemset_vector)
+            support = sum(issubset(itemset_set, transaction) for transaction in model.transactions)
+
+            if support >= model.growth.min_sup_count
+                frequent_itemsets[Tuple(itemset_vector)] = support
+            end
+        end
+    end
+
+    itemsets = collect(keys(frequent_itemsets))
+    itemset_sets = Dict(itemset => Set(itemset) for itemset in itemsets)
+    maximal_itemsets = Dict{Tuple{Vararg{String}}, Int}()
+
+    for itemset in itemsets
+        current_set = itemset_sets[itemset]
+        is_strict_subset = any(
+            itemset != other &&
+                issubset(current_set, itemset_sets[other]) &&
+                current_set != itemset_sets[other]
+            for other in itemsets
+        )
+
+        if !is_strict_subset
+            maximal_itemsets[itemset] = frequent_itemsets[itemset]
+        end
+    end
+
+    return maximal_itemsets
 end
 
 function is_single_path(tree::FPGrowth)::Bool
@@ -21,7 +63,7 @@ function is_single_path(tree::FPGrowth)::Bool
         if length(node.children) > 1
             return false
         end
-        node = first(values(node.children))
+        node = first(node.children)
     end
 
     return true
@@ -32,7 +74,7 @@ function single_path_items(tree::FPGrowth)::Vector{String}
     node = tree.root
 
     while !isempty(node.children)
-        node = first(values(node.children))
+        node = first(node.children)
         push!(items, node.item::String)
     end
 
@@ -64,7 +106,7 @@ function head_pattern_base(tree::FPGrowth, item::String)::Dict{Tuple{Vararg{Stri
     return roads
 end
 
-function frequent_items_in_base(roads::Dict{Tuple{Vararg{String}}, Int}, min_sup_count::Int)::Dict{String, Int}
+function frequent_items_in_base(model::FPMax, roads::Dict{Tuple{Vararg{String}}, Int})::Dict{String, Int}
     support_counter = Dict{String, Int}()
 
     for (road, count) in roads
@@ -73,26 +115,31 @@ function frequent_items_in_base(roads::Dict{Tuple{Vararg{String}}, Int}, min_sup
         end
     end
 
-    return Dict(item => support for (item, support) in support_counter if support >= min_sup_count)
+    return Dict(
+        item => support
+        for (item, support) in support_counter
+        if support >= model.growth.min_sup_count
+    )
 end
 
-function build_conditional_tree(tree::FPGrowth, roads::Dict{Tuple{Vararg{String}}, Int}, item_supports::Dict{String, Int})::FPGrowth
-    conditional_tree = FPGrowth(tree.min_sup)
-    conditional_tree.min_sup_count = tree.min_sup_count
-    conditional_tree.supports_table = copy(item_supports)
+function build_conditional_tree(model::FPMax, roads::Dict{Tuple{Vararg{String}}, Int}, item_supports::Dict{String, Int})::FPGrowth
+    tree = FPGrowth(model.growth.min_sup)
+    tree.min_sup_count = model.growth.min_sup_count
+    tree.supports_table = copy(item_supports)
+    tree.nodes_table = Dict{String, Vector{FPNode}}()
 
     for (road, count) in roads
         ordered_items = sort(collect(road); by = item -> (-item_supports[item], item))
         for _ in 1:count
-            parent = conditional_tree.root
+            parent = tree.root
             for road_item in ordered_items
                 parent = insert_item!(road_item, parent)
             end
         end
     end
 
-    rebuild_nodes_table!(conditional_tree)
-    return conditional_tree
+    rebuild_nodes_table!(tree)
+    return tree
 end
 
 function insert_mfi!(mfi_sets::Vector{Set{String}}, candidate::Set{String})
@@ -104,20 +151,16 @@ function insert_mfi!(mfi_sets::Vector{Set{String}}, candidate::Set{String})
         end
     end
 
-    filter!(existing -> !issubset(existing, candidate) || existing == candidate, mfi_sets)
+    filter!(
+        existing -> !(issubset(existing, candidate) && existing != candidate),
+        mfi_sets,
+    )
     push!(mfi_sets, candidate)
+    return mfi_sets
 end
 
-function support_in_transactions(item_bitsets::Dict{String, BitVector}, itemset::Set{String})::Int
-    isempty(itemset) && return 0
-
-    bitsets = (item_bitsets[item] for item in itemset)
-    support_mask = copy(first(bitsets))
-    for bitset in bitsets
-        support_mask .&= bitset
-    end
-
-    return count(support_mask)
+function support_in_transactions(model::FPMax, itemset::Set{String})::Int
+    return sum(issubset(itemset, transaction) for transaction in model.transactions)
 end
 
 function get_maximal_itemsets(model::FPMax)::Dict{Tuple{Vararg{String}}, Int}
@@ -134,12 +177,15 @@ function get_maximal_itemsets(model::FPMax)::Dict{Tuple{Vararg{String}}, Int}
             return
         end
 
-        header_items = sort(collect(keys(tree.nodes_table)); by = item -> (item_support_in_tree(tree, item), item))
+        header_items = sort(
+            collect(keys(tree.nodes_table));
+            by = item -> (item_support_in_tree(tree, item), item),
+        )
 
         for item in header_items
             push!(head, item)
             roads = head_pattern_base(tree, item)
-            tail_supports = frequent_items_in_base(roads, tree.min_sup_count)
+            tail_supports = frequent_items_in_base(model, roads)
             tail = Set(keys(tail_supports))
             head_tail = union(Set(head), tail)
 
@@ -152,7 +198,7 @@ function get_maximal_itemsets(model::FPMax)::Dict{Tuple{Vararg{String}}, Int}
                     end
                 end
 
-                conditional_tree = build_conditional_tree(tree, filtered_roads, tail_supports)
+                conditional_tree = build_conditional_tree(model, filtered_roads, tail_supports)
                 fpmax!(conditional_tree, head)
             end
 
@@ -165,7 +211,7 @@ function get_maximal_itemsets(model::FPMax)::Dict{Tuple{Vararg{String}}, Int}
     maximal_itemsets = Dict{Tuple{Vararg{String}}, Int}()
     for mfi in mfi_sets
         itemset = Tuple(sort(collect(mfi)))
-        maximal_itemsets[itemset] = support_in_transactions(model.growth.item_bitsets, mfi)
+        maximal_itemsets[itemset] = support_in_transactions(model, mfi)
     end
 
     return maximal_itemsets

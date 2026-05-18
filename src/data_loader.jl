@@ -1,4 +1,4 @@
-struct Transaction
+mutable struct Transaction
     items::Vector{String}
 end
 

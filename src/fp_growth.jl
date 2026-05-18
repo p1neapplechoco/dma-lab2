@@ -2,11 +2,11 @@ mutable struct FPNode
     item::Union{Nothing, String}
     count::Int
     parent::Union{Nothing, FPNode}
-    children::Dict{String, FPNode}
+    children::Set{FPNode}
 end
 
 FPNode(item::Union{Nothing, String}, count::Int = 0, parent::Union{Nothing, FPNode} = nothing) =
-    FPNode(item, count, parent, Dict{String, FPNode}())
+    FPNode(item, count, parent, Set{FPNode}())
 
 mutable struct FPGrowth
     min_sup::Float64
@@ -14,7 +14,6 @@ mutable struct FPGrowth
     supports_table::Dict{String, Int}
     root::FPNode
     nodes_table::Dict{String, Vector{FPNode}}
-    item_bitsets::Dict{String, BitVector}
 end
 
 function FPGrowth(min_sup::Real)
@@ -28,7 +27,6 @@ function FPGrowth(min_sup::Real)
         Dict{String, Int}(),
         FPNode(nothing),
         Dict{String, Vector{FPNode}}(),
-        Dict{String, BitVector}(),
     )
 end
 
@@ -63,65 +61,66 @@ function combinations(items::AbstractVector{T}, size::Int) where {T}
 end
 
 function insert_item!(item::String, parent::FPNode)::FPNode
-    child = get(parent.children, item, nothing)
-    if child !== nothing
-        child.count += 1
-        return child
+    for child in parent.children
+        if child.item == item
+            child.count += 1
+            return child
+        end
     end
 
     new_node = FPNode(item, 1, parent)
-    parent.children[item] = new_node
+    push!(parent.children, new_node)
     return new_node
 end
 
 function rebuild_nodes_table!(model::FPGrowth)
-    nodes_table = DefaultDict{String, Vector{FPNode}}(() -> FPNode[])
-    nodes_to_visit = collect(values(model.root.children))
+    nodes_table = Dict{String, Vector{FPNode}}()
+    nodes_to_visit = collect(model.root.children)
 
     while !isempty(nodes_to_visit)
         node = pop!(nodes_to_visit)
         node_item = node.item::String
-        push!(nodes_table[node_item], node)
-        append!(nodes_to_visit, values(node.children))
-    end
-
-    model.nodes_table = Dict(nodes_table)
-end
-
-function support_bitsets(transactions)::Dict{String, BitVector}
-    item_bitsets = DefaultDict{String, BitVector}(() -> falses(length(transactions)))
-
-    for (transaction_idx, transaction) in enumerate(transactions)
-        for item in transaction.items
-            item_bitsets[item][transaction_idx] = true
+        if !haskey(nodes_table, node_item)
+            nodes_table[node_item] = FPNode[]
         end
+        push!(nodes_table[node_item], node)
+        append!(nodes_to_visit, collect(node.children))
     end
 
-    return Dict(item_bitsets)
+    model.nodes_table = nodes_table
+    return model
 end
 
 function fit!(model::FPGrowth, transactions)::FPGrowth
     transaction_list = collect(transactions)
+
     model.min_sup_count = ceil(Int, model.min_sup * length(transaction_list))
     model.supports_table = Dict{String, Int}()
     model.root = FPNode(nothing)
     model.nodes_table = Dict{String, Vector{FPNode}}()
-    model.item_bitsets = support_bitsets(transaction_list)
+
+    for transaction in transaction_list
+        for item in transaction.items
+            model.supports_table[item] = get(model.supports_table, item, 0) + 1
+        end
+    end
 
     model.supports_table = Dict(
-        item => count(bitset)
-        for (item, bitset) in model.item_bitsets
-        if count(bitset) >= model.min_sup_count
+        item => count
+        for (item, count) in model.supports_table
+        if count >= model.min_sup_count
     )
 
     for transaction in transaction_list
-        ordered_items = sort(
+        transaction.items = sort(
             [item for item in transaction.items if haskey(model.supports_table, item)];
             by = item -> (-model.supports_table[item], item),
         )
+    end
 
+    for transaction in transaction_list
         parent = model.root
-        for item in ordered_items
+        for item in transaction.items
             parent = insert_item!(item, parent)
         end
     end
@@ -155,7 +154,7 @@ end
 function get_frequent_itemsets(model::FPGrowth)::Dict{Tuple{Vararg{String}}, Int}
     frequent_itemsets = Dict{Tuple{Vararg{String}}, Int}()
 
-    for item in keys(model.supports_table)
+    for item in Set(keys(model.supports_table))
         roads = mine_roads(model, item)
         isempty(roads) && continue
 
@@ -177,10 +176,9 @@ function get_frequent_itemsets(model::FPGrowth)::Dict{Tuple{Vararg{String}}, Int
         for size in 1:length(valid_nodes)
             for subset in combinations(valid_nodes, size)
                 support = 0
-                subset_set = Set(subset)
 
                 for (road, count) in roads
-                    if issubset(subset_set, Set(road))
+                    if all(node_item -> node_item in road, subset)
                         support += count
                     end
                 end

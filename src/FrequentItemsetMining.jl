@@ -1,7 +1,5 @@
 module FrequentItemsetMining
 
-using DataStructures: DefaultDict
-
 export Transaction,
     DataLoader,
     FPGrowth,
@@ -14,7 +12,7 @@ export Transaction,
     load_unique_items,
     mine_roads,
     parse_items,
-    support_bitsets,
+    simple_get_maximal_itemsets,
     write_itemsets
 
 include("data_loader.jl")
