@@ -79,3 +79,111 @@ function fit!(model::FPGrowthOpt, transactions)::FPGrowthOpt
 
     return model
 end
+
+function _item_support(nodes::Vector{FPNodeOpt})::Int
+    s = 0
+    @inbounds for nd in nodes
+        s += nd.count
+    end
+    return s
+end
+
+function _is_single_path(root::FPNodeOpt)::Bool
+    node = root
+    while !isempty(node.children)
+        length(node.children) > 1 && return false
+        node = first(values(node.children))
+    end
+    return true
+end
+
+# (code, count) dọc theo single path, từ trên xuống.
+function _single_path(root::FPNodeOpt)::Vector{Tuple{Int, Int}}
+    res = Tuple{Int, Int}[]
+    node = root
+    while !isempty(node.children)
+        node = first(values(node.children))
+        push!(res, (node.item, node.count))
+    end
+    return res
+end
+
+function _record!(result::Dict{Vector{Int}, Int}, itemset::Vector{Int}, supp::Int)
+    key = sort(itemset)
+    result[key] = max(get(result, key, 0), supp)
+    return result
+end
+
+function _mine!(root::FPNodeOpt, header::Dict{Int, Vector{FPNodeOpt}},
+                suffix::Vector{Int}, min_count::Int, result::Dict{Vector{Int}, Int})
+    # Single-path shortcut: sinh thẳng mọi tổ hợp con của path + suffix.
+    if _is_single_path(root)
+        path = _single_path(root)
+        m = length(path)
+        for mask in 1:((1 << m) - 1)
+            subset = Int[]
+            supp = typemax(Int)
+            @inbounds for i in 1:m
+                if (mask >> (i - 1)) & 1 == 1
+                    push!(subset, path[i][1])
+                    supp = min(supp, path[i][2])   # path counts không tăng khi đi xuống
+                end
+            end
+            supp >= min_count && _record!(result, vcat(suffix, subset), supp)
+        end
+        return
+    end
+
+    for (code, nodes) in header
+        supp = _item_support(nodes)
+        supp < min_count && continue
+        itemset = vcat(suffix, code)
+        _record!(result, itemset, supp)
+
+        # Conditional pattern base của code.
+        base_paths = Vector{Tuple{Vector{Int}, Int}}()
+        base_support = Dict{Int, Int}()
+        for nd in nodes
+            path = Int[]
+            p = nd.parent
+            while p !== nothing && p.item != -1
+                push!(path, p.item)
+                p = p.parent
+            end
+            if !isempty(path)
+                reverse!(path)
+                push!(base_paths, (path, nd.count))
+                for it in path
+                    base_support[it] = get(base_support, it, 0) + nd.count
+                end
+            end
+        end
+
+        # Conditional FP-tree: tỉa item < min_count, sắp theo (-support, code).
+        cond_root = FPNodeOpt(-1)
+        cond_header = Dict{Int, Vector{FPNodeOpt}}()
+        for (path, cnt) in base_paths
+            fpath = Int[it for it in path if get(base_support, it, 0) >= min_count]
+            isempty(fpath) && continue
+            sort!(fpath; by = it -> (-base_support[it], it))
+            insert_path!(cond_root, fpath, cnt, cond_header)
+        end
+
+        if !isempty(cond_header)
+            _mine!(cond_root, cond_header, itemset, min_count, result)
+        end
+    end
+    return
+end
+
+function get_frequent_itemsets(model::FPGrowthOpt)::Dict{Tuple{Vararg{String}}, Int}
+    result = Dict{Vector{Int}, Int}()
+    _mine!(model.root, model.header, Int[], model.min_sup_count, result)
+
+    out = Dict{Tuple{Vararg{String}}, Int}()
+    for (codes, supp) in result
+        items = sort([model.code_to_item[c] for c in codes])
+        out[Tuple(items)] = supp
+    end
+    return out
+end
