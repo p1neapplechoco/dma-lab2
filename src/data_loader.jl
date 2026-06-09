@@ -1,14 +1,3 @@
-mutable struct Transaction
-    items::Vector{String}
-end
-
-mutable struct DataLoader
-    file_path::String
-    transactions::Dict{String, Transaction}
-end
-
-DataLoader(file_path::AbstractString) = DataLoader(String(file_path), Dict{String, Transaction}())
-
 function parse_items(line::AbstractString)::Vector{String}
     clean_line = strip(line)
     isempty(clean_line) && return String[]
