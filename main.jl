@@ -2,7 +2,7 @@ using FrequentItemsetMining
 
 function print_usage()
     println("Usage:")
-    println("  julia --project=. main.jl <input_path> <minsup> [fp-growth|fp-max] [output_path]")
+    println("  julia --project=. main.jl <input_path> <minsup> [fp-growth|fp-growth-opt|fp-max] [output_path]")
     println()
     println("Examples:")
     println("  julia --project=. main.jl data/test_1.txt 0.6 fp-growth")
@@ -30,6 +30,10 @@ function main(args)
 
     if algorithm == "fp-growth"
         model = FPGrowth(min_sup)
+        fit!(model, transactions)
+        itemsets = get_frequent_itemsets(model)
+    elseif algorithm == "fp-growth-opt"
+        model = FPGrowthOpt(min_sup)
         fit!(model, transactions)
         itemsets = get_frequent_itemsets(model)
     elseif algorithm == "fp-max"
