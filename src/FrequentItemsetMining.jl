@@ -15,9 +15,11 @@ export Transaction,
     simple_get_maximal_itemsets,
     write_itemsets
 
+include("structures.jl")
+include("utils.jl")
 include("data_loader.jl")
-include("fp_growth.jl")
-include("fp_max.jl")
+include("algorithm/fp_growth.jl")
+include("algorithm/fp_max.jl")
 include("io.jl")
 
 end

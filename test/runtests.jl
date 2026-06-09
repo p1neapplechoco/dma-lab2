@@ -6,13 +6,13 @@ using FrequentItemsetMining
     @test parse_items("{1, 2, 3}") == ["1", "2", "3"]
     @test parse_items("1 2 3") == ["1", "2", "3"]
 
-    transactions = load_transactions("data/test_1.txt")
+    transactions = load_transactions("data/toy/test_1.txt")
     @test length(transactions) == 5
     @test transactions["t1"].items == ["1", "3", "4"]
 end
 
 @testset "FP-Growth baseline" begin
-    transactions = collect(values(load_transactions("data/test_1.txt")))
+    transactions = collect(values(load_transactions("data/toy/test_1.txt")))
     model = FPGrowth(0.6)
     fit!(model, transactions)
 
@@ -30,7 +30,7 @@ end
 end
 
 @testset "FP-Max baseline" begin
-    transactions = collect(values(load_transactions("data/test_1.txt")))
+    transactions = collect(values(load_transactions("data/toy/test_1.txt")))
     model = FPMax(0.6)
     fit!(model, transactions)
 
