@@ -219,3 +219,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 /report/output
+
+# Large benchmark dataset (>25MB) — hosted on Google Drive, link in README
+data/benchmark/accidents.txt
