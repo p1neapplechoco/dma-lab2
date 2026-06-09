@@ -1,7 +1,11 @@
 name = "FrequentItemsetMining"
 uuid = "0b52f49d-8b81-4f3b-9f6d-3f9d4f1b4004"
-authors = ["CSC14004"]
 version = "0.1.0"
+authors = ["CSC14004"]
+
+[deps]
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [compat]
+Plots = "1.41.6"
 julia = "1.9"
