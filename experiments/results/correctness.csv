@@ -1,0 +1,13 @@
+dataset,minsup,algo,n_ours,n_spmf,n_match,match_ratio,support_mismatch
+chess,0.8,base,8227,8227,8227,1.0,0
+chess,0.8,opt,8227,8227,8227,1.0,0
+chess,0.85,base,2669,2669,2669,1.0,0
+chess,0.85,opt,2669,2669,2669,1.0,0
+chess,0.9,base,622,622,622,1.0,0
+chess,0.9,opt,622,622,622,1.0,0
+mushrooms,0.25,base,5393,5393,5393,1.0,0
+mushrooms,0.25,opt,5393,5393,5393,1.0,0
+mushrooms,0.3,base,2587,2587,2587,1.0,0
+mushrooms,0.3,opt,2587,2587,2587,1.0,0
+mushrooms,0.4,base,505,505,505,1.0,0
+mushrooms,0.4,opt,505,505,505,1.0,0
