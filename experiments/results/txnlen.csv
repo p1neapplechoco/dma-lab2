@@ -1,6 +1,6 @@
 avg_len,algo,time_ms,n_itemsets,status
-10,opt,467.42,100,ok
-15,opt,644.07,100,ok
-20,opt,4637.92,5050,ok
-25,opt,8205.31,5050,ok
-5,opt,78.16,100,ok
+10,opt,225.15,100,ok
+15,opt,592.81,100,ok
+20,opt,4943.11,5050,ok
+25,opt,8436.85,5050,ok
+5,opt,87.92,100,ok

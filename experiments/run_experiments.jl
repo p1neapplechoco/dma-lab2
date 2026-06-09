@@ -21,8 +21,8 @@ const GRIDS = Dict(
 # minsup tối thiểu để còn chạy base. accidents=1.0 => luôn skip base (dày, 340k giao
 # dịch, base enumerate ~mũ => OOM crash, không catch được vì segfault cả process).
 const BASE_MIN = Dict(
-    "chess" => 0.8, "mushrooms" => 0.25, "retail" => 0.001,
-    "T10I4D100K" => 0.001, "accidents" => 1.0,
+    "chess" => 0.8, "mushrooms" => 0.25, "retail" => 0.01,
+    "T10I4D100K" => 0.01, "accidents" => 1.0,
 )
 
 dataset_path(name) = joinpath(@__DIR__, "..", "data", "benchmark", "$(name).txt")

@@ -1,4 +1,11 @@
 dataset,minsup,algo,n_ours,n_spmf,n_match,match_ratio,support_mismatch
+T10I4D100K,0.005,opt,1073,1073,1073,1.0,0
+T10I4D100K,0.01,base,385,385,385,1.0,0
+T10I4D100K,0.01,opt,385,385,385,1.0,0
+T10I4D100K,0.02,base,155,155,155,1.0,0
+T10I4D100K,0.02,opt,155,155,155,1.0,0
+accidents,0.7,opt,529,529,529,1.0,0
+accidents,0.8,opt,149,149,149,1.0,0
 chess,0.8,base,8227,8227,8227,1.0,0
 chess,0.8,opt,8227,8227,8227,1.0,0
 chess,0.85,base,2669,2669,2669,1.0,0
@@ -11,3 +18,8 @@ mushrooms,0.3,base,2587,2587,2587,1.0,0
 mushrooms,0.3,opt,2587,2587,2587,1.0,0
 mushrooms,0.4,base,505,505,505,1.0,0
 mushrooms,0.4,opt,505,505,505,1.0,0
+retail,0.005,opt,580,580,580,1.0,0
+retail,0.01,base,159,159,159,1.0,0
+retail,0.01,opt,159,159,159,1.0,0
+retail,0.02,base,55,55,55,1.0,0
+retail,0.02,opt,55,55,55,1.0,0
