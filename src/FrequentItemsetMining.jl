@@ -3,8 +3,10 @@ module FrequentItemsetMining
 export Transaction,
     DataLoader,
     FPGrowth,
+    FPGrowthOpt,
     FPMax,
     combinations,
+    insert_path!,
     fit!,
     get_frequent_itemsets,
     get_maximal_itemsets,
@@ -19,6 +21,7 @@ include("structures.jl")
 include("utils.jl")
 include("data_loader.jl")
 include("algorithm/fp_growth.jl")
+include("algorithm/fp_growth_opt.jl")
 include("algorithm/fp_max.jl")
 include("io.jl")
 
