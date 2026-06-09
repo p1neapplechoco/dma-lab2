@@ -80,9 +80,37 @@ function exp_correctness()
     return rows
 end
 
+function exp_timing()
+    rows = Vector{Tuple}()
+    for ds in DATASETS
+        path = dataset_path(ds)
+        isfile(path) || (@warn "missing $path"; continue)
+        transactions = collect(values(load_transactions(path)))
+        for s in GRIDS[ds]
+            t, b, n = measure_ours(() -> FPGrowthOpt(s), transactions)
+            push!(rows, (ds, s, "opt", round(t; digits = 2), b, n, "ok"))
+
+            if s >= BASE_MIN[ds]
+                tb, bb, nb = measure_ours(() -> FPGrowth(s), transactions)
+                push!(rows, (ds, s, "base", round(tb; digits = 2), bb, nb, "ok"))
+            else
+                push!(rows, (ds, s, "base", NaN, -1, -1, "skip"))
+            end
+
+            _, ns, ts, mm, stt = run_spmf(path, s)
+            push!(rows, (ds, s, "spmf", isnan(ts) ? -1.0 : round(ts; digits = 2),
+                         isnan(mm) ? -1 : round(Int, mm * 1e6), ns, string(stt)))
+        end
+    end
+    write_csv(joinpath(RESULTS, "timing.csv"),
+        ["dataset", "minsup", "algo", "time_ms", "alloc_bytes", "n_itemsets", "status"], rows)
+    return rows
+end
+
 function main()
     mkpath(RESULTS)
     @info "Correctness..."; exp_correctness()
+    @info "Timing..."; exp_timing()
     @info "Done. CSV in $RESULTS"
 end
 
