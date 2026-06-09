@@ -1,0 +1,11 @@
+dataset,fraction,n_trans,algo,time_ms,n_itemsets,status
+retail,0.1,8816,base,41.7,206,ok
+retail,0.1,8816,opt,40.5,206,ok
+retail,0.25,22040,base,199.45,204,ok
+retail,0.25,22040,opt,73.8,204,ok
+retail,0.5,44081,base,235.27,178,ok
+retail,0.5,44081,opt,207.32,178,ok
+retail,0.75,66122,base,521.59,155,ok
+retail,0.75,66122,opt,229.5,155,ok
+retail,1.0,88162,base,441.4,159,ok
+retail,1.0,88162,opt,383.72,159,ok

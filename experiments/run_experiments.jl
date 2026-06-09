@@ -18,9 +18,11 @@ const GRIDS = Dict(
 )
 
 # minsup tối thiểu để còn chạy base (tránh blowup ~mũ). Dưới ngưỡng -> skip base.
+# minsup tối thiểu để còn chạy base. accidents=1.0 => luôn skip base (dày, 340k giao
+# dịch, base enumerate ~mũ => OOM crash, không catch được vì segfault cả process).
 const BASE_MIN = Dict(
     "chess" => 0.8, "mushrooms" => 0.25, "retail" => 0.001,
-    "T10I4D100K" => 0.001, "accidents" => 0.7,
+    "T10I4D100K" => 0.001, "accidents" => 1.0,
 )
 
 dataset_path(name) = joinpath(@__DIR__, "..", "data", "benchmark", "$(name).txt")
@@ -107,10 +109,57 @@ function exp_timing()
     return rows
 end
 
+function exp_scalability()
+    rows = Vector{Tuple}()
+    configs = [("retail", 0.01), ("accidents", 0.7)]
+    for (ds, s) in configs
+        ds in DATASETS || continue
+        path = dataset_path(ds)
+        isfile(path) || (@warn "missing $path"; continue)
+        for frac in [0.1, 0.25, 0.5, 0.75, 1.0]
+            sub = subset_prefix(path, frac)
+            transactions = collect(values(load_transactions(sub)))
+            nt = length(transactions)
+            algos = Tuple{String, Function}[("opt", () -> FPGrowthOpt(s))]
+            # base chỉ chạy trên retail (thưa, an toàn); accidents dày -> base OOM.
+            ds == "retail" && push!(algos, ("base", () -> FPGrowth(s)))
+            for (algo, ctor) in algos
+                t, _, n = measure_ours(ctor, transactions)
+                push!(rows, (ds, frac, nt, algo, round(t; digits = 2), n, "ok"))
+            end
+        end
+    end
+    write_csv(joinpath(RESULTS, "scalability.csv"),
+        ["dataset", "fraction", "n_trans", "algo", "time_ms", "n_itemsets", "status"], rows)
+    return rows
+end
+
+function exp_txnlen()
+    rows = Vector{Tuple}()
+    s = 0.03
+    # Chỉ opt: base enumerate ~mũ trên giao dịch dài-dày -> OOM crash. Đây cũng là
+    # phát hiện: base không khả thi khi độ dài giao dịch tăng trên CSDL dày.
+    for avg in [5, 10, 15, 20, 25]
+        path = gen_synthetic(20000, 100, avg)
+        transactions = collect(values(load_transactions(path)))
+        t, _, n = measure_ours(() -> FPGrowthOpt(s), transactions)
+        push!(rows, (avg, "opt", round(t; digits = 2), n, "ok"))
+    end
+    write_csv(joinpath(RESULTS, "txnlen.csv"),
+        ["avg_len", "algo", "time_ms", "n_itemsets", "status"], rows)
+    return rows
+end
+
+const PHASES = haskey(ENV, "EXP_PHASES") ?
+    Set(String.(split(ENV["EXP_PHASES"], ","))) :
+    Set(["correctness", "timing", "scalability", "txnlen"])
+
 function main()
     mkpath(RESULTS)
-    @info "Correctness..."; exp_correctness()
-    @info "Timing..."; exp_timing()
+    "correctness" in PHASES && (@info "Correctness..."; exp_correctness())
+    "timing" in PHASES && (@info "Timing..."; exp_timing())
+    "scalability" in PHASES && (@info "Scalability..."; exp_scalability())
+    "txnlen" in PHASES && (@info "Txn length..."; exp_txnlen())
     @info "Done. CSV in $RESULTS"
 end
 
