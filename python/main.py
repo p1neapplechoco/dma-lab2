@@ -1,7 +1,7 @@
 from pathlib import Path
-from src_python import DataLoader, Transaction, FPGrowth, FPMax
+from fim import DataLoader, Transaction, FPGrowth, FPMax
 
-DATA_PATH = Path("./data/test_1.txt")
+DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "toy" / "test_1.txt"
 data_loader = DataLoader(str(DATA_PATH))
 
 transactions = data_loader.get_transactions()
