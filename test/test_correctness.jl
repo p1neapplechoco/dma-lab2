@@ -61,3 +61,15 @@ end
         end
     end
 end
+
+@testset "Association rules" begin
+    transactions = collect(values(load_transactions("data/toy/test_1.txt")))
+    model = FPGrowth(0.6); fit!(model, transactions)
+    itemsets = get_frequent_itemsets(model)
+    rules = generate_rules(itemsets, length(transactions); minconf = 0.5)
+
+    idx = findfirst(x -> x.antecedent == ["1"] && x.consequent == ["3"], rules)
+    @test idx !== nothing
+    @test isapprox(rules[idx].confidence, 1.0; atol = 1e-9)
+    @test isapprox(rules[idx].lift, 1.25; atol = 1e-9)
+end
