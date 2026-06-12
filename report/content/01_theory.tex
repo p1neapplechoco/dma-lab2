@@ -28,7 +28,7 @@ Trực giác của FP-Growth là nhiều giao dịch có tiền tố giống nha
 
 Một node trong FP-tree gồm bốn thành phần: item đang đại diện, biến đếm số giao dịch đi qua node, con trỏ tới node cha, và tập các node con. Root không chứa item thật. Header table ánh xạ mỗi item tới danh sách các node mang item đó trong cây.
 
-Ví dụ với cơ sở dữ liệu đồ chơi ở Chương 2 và $\theta = 0.6$, các item phổ biến là $2,3,5,1$ với support lần lượt $4,4,4,3$. Sau khi loại item không phổ biến và sắp item theo support giảm dần, FP-tree có dạng khái niệm trong Hình \ref{fig:fptree-toy}.
+Ví dụ với cơ sở dữ liệu toy ở Chương 2 và $\theta = 0.6$, các item phổ biến là $2,3,5,1$ với support lần lượt $4,4,4,3$. Sau khi loại item không phổ biến và sắp item theo support giảm dần, FP-tree có dạng khái niệm trong Hình \ref{fig:fptree-toy}.
 
 \begin{figure}[H]
     \centering
@@ -52,7 +52,7 @@ Ví dụ với cơ sở dữ liệu đồ chơi ở Chương 2 và $\theta = 0.6
             child { node {$5:1$} }
         };
     \end{tikzpicture}
-    \caption{FP-tree minh hoạ cho CSDL đồ chơi ở Chương 2 với minsup $=0.6$.}
+    \caption{FP-tree minh hoạ cho CSDL toy ở Chương 2 với minsup $=0.6$.}
     \label{fig:fptree-toy}
 \end{figure}
 

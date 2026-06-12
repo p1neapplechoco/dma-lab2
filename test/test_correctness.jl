@@ -41,15 +41,21 @@ end
 end
 
 @testset "FP-Growth opt == base" begin
+    # Năm CSDL khác nhau: hai toy ở Chương 2 và ba benchmark.
+    # Minsup của benchmark chọn cao để test chạy nhanh nhưng vẫn có itemset đa cấp.
     datasets = [
         "data/toy/test_1.txt",
         "data/toy/test_2.txt",
         "data/benchmark/chess.txt",
+        "data/benchmark/mushrooms.txt",
+        "data/benchmark/retail.txt",
     ]
     minsups = Dict(
         "data/toy/test_1.txt" => [0.2, 0.4, 0.6, 0.8],
         "data/toy/test_2.txt" => [0.2, 0.4, 0.6, 0.8],
         "data/benchmark/chess.txt" => [0.9, 0.95],
+        "data/benchmark/mushrooms.txt" => [0.4, 0.5],
+        "data/benchmark/retail.txt" => [0.05, 0.1],
     )
 
     for ds in datasets

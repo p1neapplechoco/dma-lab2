@@ -5,8 +5,8 @@ function print_usage()
     println("  julia --project=. main.jl <input_path> <minsup> [fp-growth|fp-growth-opt|fp-max] [output_path]")
     println()
     println("Examples:")
-    println("  julia --project=. main.jl data/test_1.txt 0.6 fp-growth")
-    println("  julia --project=. main.jl data/test_1.txt 0.6 fp-max output.txt")
+    println("  julia --project=. main.jl data/toy/test_1.txt 0.6 fp-growth")
+    println("  julia --project=. main.jl data/toy/test_1.txt 0.6 fp-max output.txt")
 end
 
 function print_itemsets(itemsets::Dict{Tuple{Vararg{String}}, Int})
