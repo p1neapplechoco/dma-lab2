@@ -1,0 +1,51 @@
+\section{Khái niệm và ký hiệu}
+
+Phần này tổng hợp các khái niệm và ký hiệu được dùng nhất quán xuyên suốt báo cáo, nhằm tránh lặp lại định nghĩa ở từng chương. Các định nghĩa hình thức đầy đủ được trình bày ở Chương 1; ở đây chỉ liệt kê để tiện tra cứu. Trừ khi nói rõ là tương đối, mọi giá trị support trong báo cáo đều là support tuyệt đối (đếm số giao dịch).
+
+\subsection{Bảng ký hiệu}
+
+Bảng \ref{tab:notation} liệt kê các ký hiệu toán học chính và ý nghĩa của chúng.
+
+\begin{table}[H]
+    \centering
+    \caption{Bảng ký hiệu dùng xuyên suốt báo cáo.}
+    \label{tab:notation}
+    \begin{tabular}{l p{10.5cm}}
+        \toprule
+        Ký hiệu & Ý nghĩa \\
+        \midrule
+        $I = \{i_1, \ldots, i_m\}$ & Tập tất cả item; $m$ là số item phân biệt \\
+        $D = \{T_1, \ldots, T_n\}$ & Cơ sở dữ liệu giao dịch; $n = |D|$ là số giao dịch \\
+        $T_j$ & Giao dịch thứ $j$, với $T_j \subseteq I$ \\
+        $X, Y$ & Itemset, tức tập con của $I$ \\
+        $X \subseteq T_j$ & Giao dịch $T_j$ chứa itemset $X$ \\
+        $\operatorname{sup}(X)$ & Support tuyệt đối: số giao dịch trong $D$ chứa $X$ \\
+        $\operatorname{sup}_{rel}(X)$ & Support tương đối: $\operatorname{sup}(X) / |D|$ \\
+        $\theta$ & Ngưỡng support tối thiểu tương đối (minsup) \\
+        $\lceil \theta n \rceil$ & Ngưỡng support tối thiểu tuyệt đối tương ứng \\
+        $X \Rightarrow Y$ & Luật kết hợp, với $X \cap Y = \emptyset$ \\
+        $\operatorname{conf}(X \Rightarrow Y)$ & Confidence: $\operatorname{sup}(X \cup Y) / \operatorname{sup}(X)$ \\
+        $\operatorname{lift}(X \Rightarrow Y)$ & Lift: $\operatorname{conf}(X \Rightarrow Y) / \operatorname{sup}_{rel}(Y)$ \\
+        minconf & Ngưỡng confidence tối thiểu của luật \\
+        $\bar{\ell}$ & Độ dài giao dịch trung bình sau bước tỉa item không phổ biến \\
+        $L$ & Tổng số item còn lại sau tỉa trên toàn bộ giao dịch \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Các khái niệm chính}
+
+Các thuật ngữ sau xuất hiện lặp lại trong các chương sau và được hiểu thống nhất như dưới đây:
+
+\begin{itemize}
+    \item \textbf{Tập phổ biến (frequent itemset)}: itemset $X$ với $\operatorname{sup}_{rel}(X) \geq \theta$, tương đương $\operatorname{sup}(X) \geq \lceil \theta n \rceil$ \cite{Agrawal1993AssociationRules}.
+    \item \textbf{Tập đóng (closed itemset)}: tập phổ biến $X$ không có siêu tập phổ biến nào cùng support.
+    \item \textbf{Tập tối đại (maximal itemset)}: tập phổ biến $X$ không có siêu tập phổ biến nào; mọi tập tối đại đều là tập đóng.
+    \item \textbf{Luật kết hợp (association rule)}: suy diễn $X \Rightarrow Y$ được đánh giá qua support, confidence và lift \cite{Agrawal1993AssociationRules}.
+    \item \textbf{FP-tree}: cây nén tiền tố biểu diễn cô đọng cơ sở dữ liệu giao dịch; mỗi node lưu item, biến đếm \textit{count}, con trỏ cha và tập con \cite{Han2000FPGrowth}.
+    \item \textbf{Header table}: bảng ánh xạ mỗi item tới danh sách các node mang item đó trong FP-tree.
+    \item \textbf{Conditional pattern base}: tập các đường tiền tố kết thúc tại một item, dùng để dựng cây điều kiện.
+    \item \textbf{Conditional FP-tree}: FP-tree xây từ conditional pattern base của một hậu tố, dùng trong khai thác đệ quy.
+    \item \textbf{Single-path}: trường hợp FP-tree (hoặc cây điều kiện) chỉ có một đường đi, cho phép sinh trực tiếp mọi tổ hợp con.
+    \item \textbf{MFI (maximal frequent itemset list)}: danh sách các tập phổ biến tối đại được FP-Max duy trì trong quá trình khai thác \cite{Grahne2003FPMax}.
+\end{itemize}

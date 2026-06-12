@@ -9,34 +9,30 @@ Các thuật toán được so sánh gồm:
 \begin{itemize}
     \item \texttt{base}: bản FP-Growth cơ bản của nhóm.
     \item \texttt{opt}: bản FP-Growth tối ưu của nhóm.
-    \item \texttt{spmf}: cài đặt FP-Growth trong thư viện SPMF, dùng làm tham chiếu.
+    \item \texttt{spmf}: cài đặt FP-Growth trong thư viện SPMF \cite{FournierViger2014SPMF}, dùng làm tham chiếu.
 \end{itemize}
 
 Bản cơ bản có chiến lược enumerate tổ hợp trong conditional base nên không chạy ở các cấu hình có nguy cơ bùng nổ bộ nhớ, đặc biệt trên dữ liệu dày hoặc minsup thấp. Các cấu hình này được đánh dấu \texttt{skip} trong CSV thay vì ép chạy đến khi tiến trình bị lỗi. Với Julia, thời gian được đo sau một lần warm-up để giảm ảnh hưởng của JIT; bộ nhớ dùng cột \texttt{alloc\_bytes} từ \texttt{@timed}. Với SPMF, thời gian và bộ nhớ lấy từ log của chương trình Java.
 
 \subsection{Tập dữ liệu benchmark}
 
-Bảng \ref{tab:benchmark-datasets} tóm tắt các tập dữ liệu dùng trong thực nghiệm. Các số liệu được tính trực tiếp từ file trong thư mục \texttt{data/benchmark}.
+Bảng \ref{tab:benchmark-datasets} tóm tắt các tập dữ liệu dùng trong thực nghiệm. Các tập dữ liệu này là benchmark phổ biến trong cộng đồng FIM, lấy từ kho dữ liệu FIMI \cite{Goethals2003FIMI}. Các số liệu trong bảng được tính trực tiếp từ file trong thư mục \texttt{data/benchmark}.
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|l|r|r|r|l|}
-        \hline
-        Dataset & \#Trans. & \#Items & AvgLen & Đặc điểm \\
-        \hline
-        Chess & 3,196 & 75 & 37.00 & Dày, giao dịch dài \\
-        \hline
-        Mushrooms & 8,416 & 119 & 23.00 & Dày, nhiều item đồng xuất hiện \\
-        \hline
-        Retail & 88,162 & 16,470 & 10.31 & Thưa, dữ liệu bán lẻ thực \\
-        \hline
-        T10I4D100K & 100,000 & 870 & 10.10 & Tổng hợp, thưa \\
-        \hline
-        Accidents & 340,183 & 468 & 33.80 & Rất lớn và dày \\
-        \hline
-    \end{tabular}
     \caption{Các tập dữ liệu benchmark dùng trong Chương 4.}
     \label{tab:benchmark-datasets}
+    \begin{tabular}{l r r r l}
+        \toprule
+        Dataset & \#Trans. & \#Items & AvgLen & Đặc điểm \\
+        \midrule
+        Chess & 3,196 & 75 & 37.00 & Dày, giao dịch dài \\
+        Mushrooms & 8,416 & 119 & 23.00 & Dày, nhiều item đồng xuất hiện \\
+        Retail & 88,162 & 16,470 & 10.31 & Thưa, dữ liệu bán lẻ thực \\
+        T10I4D100K & 100,000 & 870 & 10.10 & Tổng hợp, thưa \\
+        Accidents & 340,183 & 468 & 33.80 & Rất lớn và dày \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \subsection{Tính đúng đắn}
@@ -45,25 +41,20 @@ Kết quả trong \texttt{correctness.csv} cho thấy mọi cấu hình được
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|l|r|l|r|r|r|}
-        \hline
-        Dataset & minsup & Algo & \#Ours & \#SPMF & Match ratio \\
-        \hline
-        Chess & 0.80 & base/opt & 8,227 & 8,227 & 1.0 \\
-        \hline
-        Chess & 0.90 & base/opt & 622 & 622 & 1.0 \\
-        \hline
-        Mushrooms & 0.25 & base/opt & 5,393 & 5,393 & 1.0 \\
-        \hline
-        Retail & 0.01 & base/opt & 159 & 159 & 1.0 \\
-        \hline
-        T10I4D100K & 0.01 & base/opt & 385 & 385 & 1.0 \\
-        \hline
-        Accidents & 0.70 & opt & 529 & 529 & 1.0 \\
-        \hline
-    \end{tabular}
     \caption{Kết quả correctness đại diện khi so với SPMF.}
     \label{tab:correctness-summary}
+    \begin{tabular}{l r l r r r}
+        \toprule
+        Dataset & minsup & Algo & \#Ours & \#SPMF & Match ratio \\
+        \midrule
+        Chess & 0.80 & base/opt & 8,227 & 8,227 & 1.0 \\
+        Chess & 0.90 & base/opt & 622 & 622 & 1.0 \\
+        Mushrooms & 0.25 & base/opt & 5,393 & 5,393 & 1.0 \\
+        Retail & 0.01 & base/opt & 159 & 159 & 1.0 \\
+        T10I4D100K & 0.01 & base/opt & 385 & 385 & 1.0 \\
+        Accidents & 0.70 & opt & 529 & 529 & 1.0 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 Kết quả này xác nhận hai điểm. Thứ nhất, parser, cách tính minsup tuyệt đối và support của nhóm tương thích với SPMF trên dữ liệu benchmark. Thứ hai, các tối ưu trong \texttt{FPGrowthOpt} không làm thay đổi output so với bản cơ bản.
@@ -169,23 +160,19 @@ Thí nghiệm cuối dùng dữ liệu tổng hợp 20,000 giao dịch, 100 item
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|r|r|r|}
-        \hline
-        AvgLen & Time ms & \#Itemsets \\
-        \hline
-        5 & 87.92 & 100 \\
-        \hline
-        10 & 225.15 & 100 \\
-        \hline
-        15 & 592.81 & 100 \\
-        \hline
-        20 & 4943.11 & 5,050 \\
-        \hline
-        25 & 8436.85 & 5,050 \\
-        \hline
-    \end{tabular}
     \caption{Ảnh hưởng của độ dài giao dịch trung bình lên thời gian chạy.}
     \label{tab:txnlen}
+    \begin{tabular}{r r r}
+        \toprule
+        AvgLen & Time ms & \#Itemsets \\
+        \midrule
+        5 & 87.92 & 100 \\
+        10 & 225.15 & 100 \\
+        15 & 592.81 & 100 \\
+        20 & 4943.11 & 5,050 \\
+        25 & 8436.85 & 5,050 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \begin{figure}[H]

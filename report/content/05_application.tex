@@ -14,7 +14,7 @@ và
     \operatorname{lift}(X \Rightarrow Y) =
     \frac{\operatorname{conf}(X \Rightarrow Y)}{\operatorname{sup}_{rel}(Y)}.
 \]
-Confidence đo xác suất mua $Y$ khi đã mua $X$. Lift đo mức tăng so với xác suất mua $Y$ độc lập. Nếu lift lớn hơn 1, $X$ và $Y$ có xu hướng xuất hiện cùng nhau nhiều hơn kỳ vọng ngẫu nhiên \cite{Agrawal1993AssociationRules}.
+Confidence đo xác suất mua $Y$ khi đã mua $X$. Lift đo mức tăng so với xác suất mua $Y$ độc lập \cite{Brin1997Implication}. Nếu lift lớn hơn 1, $X$ và $Y$ có xu hướng xuất hiện cùng nhau nhiều hơn kỳ vọng ngẫu nhiên \cite{Agrawal1993AssociationRules}.
 
 \subsection{Dữ liệu và thiết lập}
 
@@ -22,11 +22,11 @@ Nhóm sử dụng tập \texttt{data/groceries.txt}, gồm 9,835 giao dịch và
 
 \begin{itemize}
     \item minsup $= 0.01$, tương đương ít nhất $\lceil 0.01 \times 9835 \rceil = 99$ giao dịch.
-    \item minconf $= 0.3$.
-    \item Luật được sắp theo lift giảm dần; nếu lift bằng nhau thì ưu tiên confidence cao hơn.
+    \item minconf $= 0.2$.
+    \item Luật được lọc theo $\operatorname{lift} > 1$ rồi sắp theo lift giảm dần; nếu lift bằng nhau thì sắp theo thứ tự bảng chữ cái của vế trái, sau đó của vế phải.
 \end{itemize}
 
-Với thiết lập này, thuật toán tìm được 333 frequent itemsets và sinh 125 luật thoả minconf.
+Với thiết lập này, thuật toán tìm được 333 frequent itemsets và sinh 231 luật thoả minconf và có lift lớn hơn 1.
 
 \subsection{Top-10 luật theo lift}
 
@@ -34,34 +34,25 @@ Bảng \ref{tab:grocery-rules} trình bày 10 luật có lift cao nhất. Suppor
 
 \begin{table}[H]
     \centering
-    \small
-    \begin{tabular}{|p{5.0cm}|p{3.2cm}|r|r|r|}
-        \hline
-        Vế trái $X$ & Vế phải $Y$ & Support & Confidence & Lift \\
-        \hline
-        citrus fruit + other vegetables & root vegetables & 0.0104 & 0.3592 & 3.2950 \\
-        \hline
-        other vegetables + tropical fruit & root vegetables & 0.0123 & 0.3428 & 3.1448 \\
-        \hline
-        beef & root vegetables & 0.0174 & 0.3314 & 3.0404 \\
-        \hline
-        citrus fruit + root vegetables & other vegetables & 0.0104 & 0.5862 & 3.0296 \\
-        \hline
-        root vegetables + tropical fruit & other vegetables & 0.0123 & 0.5845 & 3.0210 \\
-        \hline
-        other vegetables + whole milk & root vegetables & 0.0232 & 0.3098 & 2.8421 \\
-        \hline
-        curd + whole milk & yogurt & 0.0101 & 0.3852 & 2.7614 \\
-        \hline
-        rolls/buns + root vegetables & other vegetables & 0.0122 & 0.5021 & 2.5949 \\
-        \hline
-        root vegetables + yogurt & other vegetables & 0.0129 & 0.5000 & 2.5841 \\
-        \hline
-        tropical fruit + whole milk & yogurt & 0.0151 & 0.3582 & 2.5675 \\
-        \hline
-    \end{tabular}
-    \caption{Top-10 luật kết hợp trên Groceries theo lift, với minsup $=0.01$ và minconf $=0.3$.}
+    \caption{Top-10 luật kết hợp trên Groceries theo lift, với minsup $=0.01$ và minconf $=0.2$.}
     \label{tab:grocery-rules}
+    \small
+    \begin{tabular}{p{5.0cm} p{3.2cm} r r r}
+        \toprule
+        Vế trái $X$ & Vế phải $Y$ & Support & Confidence & Lift \\
+        \midrule
+        citrus fruit + other vegetables & root vegetables & 0.0104 & 0.3592 & 3.2950 \\
+        other vegetables + yogurt & whipped/sour cream & 0.0102 & 0.2342 & 3.2671 \\
+        other vegetables + tropical fruit & root vegetables & 0.0123 & 0.3428 & 3.1448 \\
+        beef & root vegetables & 0.0174 & 0.3314 & 3.0404 \\
+        citrus fruit + root vegetables & other vegetables & 0.0104 & 0.5862 & 3.0296 \\
+        root vegetables + tropical fruit & other vegetables & 0.0123 & 0.5845 & 3.0210 \\
+        other vegetables + whole milk & root vegetables & 0.0232 & 0.3098 & 2.8421 \\
+        root vegetables & other vegetables + whole milk & 0.0232 & 0.2127 & 2.8421 \\
+        butter & other vegetables + whole milk & 0.0115 & 0.2073 & 2.7706 \\
+        curd + whole milk & yogurt & 0.0101 & 0.3852 & 2.7614 \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 \subsection{Diễn giải kinh doanh}
@@ -71,5 +62,7 @@ Các luật mạnh nhất tập trung quanh nhóm rau củ, sữa và sữa chua
 Luật ``beef $\Rightarrow$ root vegetables'' có confidence 0.3314 và lift 3.0404. Về mặt kinh doanh, người mua thịt bò có xu hướng mua thêm rau củ dùng cho món hầm, súp hoặc bữa ăn chính. Siêu thị có thể dùng luật này để thiết kế combo nguyên liệu hoặc coupon giảm giá chéo.
 
 Nhóm luật liên quan tới \textit{whole milk}, \textit{curd} và \textit{yogurt} cho thấy các sản phẩm sữa có quan hệ đồng mua rõ. Ví dụ ``curd + whole milk $\Rightarrow$ yogurt'' có confidence 0.3852 và lift 2.7614. Luật này phù hợp cho gợi ý trong giỏ hàng trực tuyến: khi khách đã chọn curd và whole milk, hệ thống có thể đề xuất yogurt như một sản phẩm bổ sung.
+
+Vì ngưỡng minconf đặt thấp ($0.2$), top theo lift còn chứa một số luật có confidence khiêm tốn, ví dụ ``other vegetables + yogurt $\Rightarrow$ whipped/sour cream'' chỉ có confidence $0.2342$ dù lift đạt $3.2671$. Lift cao trong trường hợp này phản ánh whipped/sour cream là mặt hàng hiếm, nên một mức tăng nhỏ về xác suất đã đẩy lift lên. Ngoài ra một vài luật có vế phải gồm hai item, như ``root vegetables $\Rightarrow$ other vegetables + whole milk''. Khi đọc các luật này cần xét confidence cùng lift, không chỉ riêng lift.
 
 Một điểm cần lưu ý là support của các luật top lift chỉ quanh 1--2.3\%. Các luật này có ý nghĩa định hướng gợi ý theo ngữ cảnh, nhưng không nên xem là luật bao phủ phần lớn khách hàng. Nếu mục tiêu là khuyến mãi diện rộng, cần cân bằng lift với support tuyệt đối và lợi nhuận của từng sản phẩm.

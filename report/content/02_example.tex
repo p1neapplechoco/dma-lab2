@@ -6,67 +6,56 @@ Xét cơ sở dữ liệu $D$ gồm 5 giao dịch trong Bảng \ref{tab:toy-db}.
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|c|c|}
-        \hline
-        Giao dịch & Item \\
-        \hline
-        $T_1$ & $\{1,3,4\}$ \\
-        \hline
-        $T_2$ & $\{2,3,5\}$ \\
-        \hline
-        $T_3$ & $\{1,2,3,5\}$ \\
-        \hline
-        $T_4$ & $\{2,5\}$ \\
-        \hline
-        $T_5$ & $\{1,2,3,5\}$ \\
-        \hline
-    \end{tabular}
     \caption{CSDL đồ chơi dùng để minh hoạ FP-Growth.}
     \label{tab:toy-db}
+    \begin{tabular}{c c}
+        \toprule
+        Giao dịch & Item \\
+        \midrule
+        $T_1$ & $\{1,3,4\}$ \\
+        $T_2$ & $\{2,3,5\}$ \\
+        $T_3$ & $\{1,2,3,5\}$ \\
+        $T_4$ & $\{2,5\}$ \\
+        $T_5$ & $\{1,2,3,5\}$ \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 Bước đầu tiên là đếm support của từng item. Kết quả là $\operatorname{sup}(1)=3$, $\operatorname{sup}(2)=4$, $\operatorname{sup}(3)=4$, $\operatorname{sup}(4)=1$, $\operatorname{sup}(5)=4$. Vì minsup tuyệt đối bằng 3, item $4$ bị loại. Các item còn lại được sắp theo support giảm dần, nếu bằng nhau thì theo mã item tăng dần: $2 \prec 3 \prec 5 \prec 1$.
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|c|c|c|}
-        \hline
-        Giao dịch & Sau khi loại item không phổ biến & Sau khi sắp theo thứ tự FP-tree \\
-        \hline
-        $T_1$ & $\{1,3\}$ & $[3,1]$ \\
-        \hline
-        $T_2$ & $\{2,3,5\}$ & $[2,3,5]$ \\
-        \hline
-        $T_3$ & $\{1,2,3,5\}$ & $[2,3,5,1]$ \\
-        \hline
-        $T_4$ & $\{2,5\}$ & $[2,5]$ \\
-        \hline
-        $T_5$ & $\{1,2,3,5\}$ & $[2,3,5,1]$ \\
-        \hline
-    \end{tabular}
     \caption{Các giao dịch sau bước tỉa và sắp thứ tự.}
     \label{tab:toy-ordered}
+    \begin{tabular}{c c c}
+        \toprule
+        Giao dịch & Sau khi loại item không phổ biến & Sau khi sắp theo thứ tự FP-tree \\
+        \midrule
+        $T_1$ & $\{1,3\}$ & $[3,1]$ \\
+        $T_2$ & $\{2,3,5\}$ & $[2,3,5]$ \\
+        $T_3$ & $\{1,2,3,5\}$ & $[2,3,5,1]$ \\
+        $T_4$ & $\{2,5\}$ & $[2,5]$ \\
+        $T_5$ & $\{1,2,3,5\}$ & $[2,3,5,1]$ \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 Chèn tuần tự các giao dịch trong Bảng \ref{tab:toy-ordered} tạo ra FP-tree đã minh hoạ ở Hình \ref{fig:fptree-toy}. Từ cây này, thuật toán khai thác từng item thông qua conditional pattern base:
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|c|c|c|}
-        \hline
-        Item hậu tố & Conditional pattern base & Itemset phổ biến sinh ra \\
-        \hline
-        $1$ & $(3):1$, $(2,3,5):2$ & $\{1\}:3$, $\{1,3\}:3$ \\
-        \hline
-        $5$ & $(2,3):3$, $(2):1$ & $\{5\}:4$, $\{2,5\}:4$, $\{3,5\}:3$, $\{2,3,5\}:3$ \\
-        \hline
-        $3$ & $\emptyset:1$, $(2):3$ & $\{3\}:4$, $\{2,3\}:3$ \\
-        \hline
-        $2$ & $\emptyset:4$ & $\{2\}:4$ \\
-        \hline
-    \end{tabular}
     \caption{Khai thác conditional pattern base trong ví dụ cơ sở.}
     \label{tab:toy-conditional}
+    \begin{tabular}{c c c}
+        \toprule
+        Item hậu tố & Conditional pattern base & Itemset phổ biến sinh ra \\
+        \midrule
+        $1$ & $(3):1$, $(2,3,5):2$ & $\{1\}:3$, $\{1,3\}:3$ \\
+        $5$ & $(2,3):3$, $(2):1$ & $\{5\}:4$, $\{2,5\}:4$, $\{3,5\}:3$, $\{2,3,5\}:3$ \\
+        $3$ & $\emptyset:1$, $(2):3$ & $\{3\}:4$, $\{2,3\}:3$ \\
+        $2$ & $\emptyset:4$ & $\{2\}:4$ \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 Tập kết quả cuối cùng gồm:
@@ -90,23 +79,19 @@ Xét CSDL trong Bảng \ref{tab:single-path-db} với $\theta = 0.6$, minsup tuy
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{|c|c|}
-        \hline
-        Giao dịch & Item \\
-        \hline
-        $T_1$ & $\{A,B,C,D\}$ \\
-        \hline
-        $T_2$ & $\{A,B,C\}$ \\
-        \hline
-        $T_3$ & $\{A,B\}$ \\
-        \hline
-        $T_4$ & $\{A,B,C\}$ \\
-        \hline
-        $T_5$ & $\{A,B,C,D\}$ \\
-        \hline
-    \end{tabular}
     \caption{CSDL thiết kế để tạo FP-tree một nhánh.}
     \label{tab:single-path-db}
+    \begin{tabular}{c c}
+        \toprule
+        Giao dịch & Item \\
+        \midrule
+        $T_1$ & $\{A,B,C,D\}$ \\
+        $T_2$ & $\{A,B,C\}$ \\
+        $T_3$ & $\{A,B\}$ \\
+        $T_4$ & $\{A,B,C\}$ \\
+        $T_5$ & $\{A,B,C,D\}$ \\
+        \bottomrule
+    \end{tabular}
 \end{table}
 
 Support của các item là $\operatorname{sup}(A)=5$, $\operatorname{sup}(B)=5$, $\operatorname{sup}(C)=4$, $\operatorname{sup}(D)=2$. Item $D$ bị loại vì support nhỏ hơn 3. Sau khi tỉa, mọi giao dịch đều có dạng tiền tố của $[A,B,C]$, nên FP-tree chỉ còn một đường:
