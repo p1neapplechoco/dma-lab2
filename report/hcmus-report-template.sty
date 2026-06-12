@@ -8,9 +8,17 @@
 \usepackage[colorlinks=true,linkcolor=blue, citecolor=red]{hyperref}
 \usepackage{url}
 \usepackage[top=.75in, left=.75in, right=.75in, bottom=1in]{geometry}
-\usepackage[utf8]{vietnam}
-\usepackage[style=apa, backend=biber, sorting=none]{biblatex}
-\addbibresource{ref/ref.bib} % Ghi cả đuôi .bib
+\usepackage{iftex}
+\ifPDFTeX
+	\usepackage[utf8]{inputenc}
+	\usepackage[T1]{fontenc}
+	\usepackage{lmodern}
+\else
+	\usepackage{fontspec}
+\fi
+\usepackage[provide=*]{babel}
+\babelprovide[main, import]{vietnamese}
+\usepackage[round]{natbib}
 \usepackage{placeins}
 % verbatim
 \usepackage{verbatim}

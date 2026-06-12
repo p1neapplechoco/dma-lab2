@@ -1,1 +1,204 @@
 \section{Thực nghiệm và đánh giá}
+
+\subsection{Thiết lập thực nghiệm}
+
+Thực nghiệm được thiết kế để kiểm tra sáu khía cạnh: tính đúng đắn so với SPMF, thời gian chạy theo minsup, số lượng frequent itemset theo minsup, bộ nhớ cấp phát, khả năng mở rộng theo số giao dịch, và ảnh hưởng của độ dài giao dịch trung bình. Kết quả được lưu trong các file CSV ở \texttt{experiments/results/}; hình minh hoạ được sinh vào \texttt{experiments/figures/}.
+
+Các thuật toán được so sánh gồm:
+
+\begin{itemize}
+    \item \texttt{base}: bản FP-Growth cơ bản của nhóm.
+    \item \texttt{opt}: bản FP-Growth tối ưu của nhóm.
+    \item \texttt{spmf}: cài đặt FP-Growth trong thư viện SPMF, dùng làm tham chiếu.
+\end{itemize}
+
+Bản cơ bản có chiến lược enumerate tổ hợp trong conditional base nên không chạy ở các cấu hình có nguy cơ bùng nổ bộ nhớ, đặc biệt trên dữ liệu dày hoặc minsup thấp. Các cấu hình này được đánh dấu \texttt{skip} trong CSV thay vì ép chạy đến khi tiến trình bị lỗi. Với Julia, thời gian được đo sau một lần warm-up để giảm ảnh hưởng của JIT; bộ nhớ dùng cột \texttt{alloc\_bytes} từ \texttt{@timed}. Với SPMF, thời gian và bộ nhớ lấy từ log của chương trình Java.
+
+\subsection{Tập dữ liệu benchmark}
+
+Bảng \ref{tab:benchmark-datasets} tóm tắt các tập dữ liệu dùng trong thực nghiệm. Các số liệu được tính trực tiếp từ file trong thư mục \texttt{data/benchmark}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|r|r|r|l|}
+        \hline
+        Dataset & \#Trans. & \#Items & AvgLen & Đặc điểm \\
+        \hline
+        Chess & 3,196 & 75 & 37.00 & Dày, giao dịch dài \\
+        \hline
+        Mushrooms & 8,416 & 119 & 23.00 & Dày, nhiều item đồng xuất hiện \\
+        \hline
+        Retail & 88,162 & 16,470 & 10.31 & Thưa, dữ liệu bán lẻ thực \\
+        \hline
+        T10I4D100K & 100,000 & 870 & 10.10 & Tổng hợp, thưa \\
+        \hline
+        Accidents & 340,183 & 468 & 33.80 & Rất lớn và dày \\
+        \hline
+    \end{tabular}
+    \caption{Các tập dữ liệu benchmark dùng trong Chương 4.}
+    \label{tab:benchmark-datasets}
+\end{table}
+
+\subsection{Tính đúng đắn}
+
+Kết quả trong \texttt{correctness.csv} cho thấy mọi cấu hình được kiểm tra đều khớp hoàn toàn với SPMF: \texttt{match\_ratio = 1.0} và \texttt{support\_mismatch = 0}. Bảng \ref{tab:correctness-summary} liệt kê một số điểm đại diện.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|r|l|r|r|r|}
+        \hline
+        Dataset & minsup & Algo & \#Ours & \#SPMF & Match ratio \\
+        \hline
+        Chess & 0.80 & base/opt & 8,227 & 8,227 & 1.0 \\
+        \hline
+        Chess & 0.90 & base/opt & 622 & 622 & 1.0 \\
+        \hline
+        Mushrooms & 0.25 & base/opt & 5,393 & 5,393 & 1.0 \\
+        \hline
+        Retail & 0.01 & base/opt & 159 & 159 & 1.0 \\
+        \hline
+        T10I4D100K & 0.01 & base/opt & 385 & 385 & 1.0 \\
+        \hline
+        Accidents & 0.70 & opt & 529 & 529 & 1.0 \\
+        \hline
+    \end{tabular}
+    \caption{Kết quả correctness đại diện khi so với SPMF.}
+    \label{tab:correctness-summary}
+\end{table}
+
+Kết quả này xác nhận hai điểm. Thứ nhất, parser, cách tính minsup tuyệt đối và support của nhóm tương thích với SPMF trên dữ liệu benchmark. Thứ hai, các tối ưu trong \texttt{FPGrowthOpt} không làm thay đổi output so với bản cơ bản.
+
+\subsection{Thời gian chạy theo minsup}
+
+Hình \ref{fig:time-chess} đến Hình \ref{fig:time-t10} cho thấy thời gian chạy khi minsup giảm. Xu hướng chung là minsup càng thấp thì số lượng frequent itemset càng tăng và thời gian chạy tăng theo. Điều này phù hợp với phân tích lý thuyết: khi ngưỡng thấp, nhiều item sống sót qua bước tỉa hơn, conditional tree rộng hơn và output lớn hơn.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{../experiments/figures/time_chess.png}
+    \caption{Thời gian chạy theo minsup trên Chess.}
+    \label{fig:time-chess}
+\end{figure}
+
+Trên Chess, bản tối ưu thể hiện cải thiện rõ ở vùng output lớn. Tại minsup $0.8$, \texttt{base} mất 1575.41 ms trong khi \texttt{opt} mất 40.76 ms, nhanh hơn khoảng 38.65 lần. Khi minsup rất cao như $0.95$, output chỉ còn 77 itemsets nên overhead của bản tối ưu làm nó chậm hơn base.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{../experiments/figures/time_mushrooms.png}
+    \caption{Thời gian chạy theo minsup trên Mushrooms.}
+    \label{fig:time-mushrooms}
+\end{figure}
+
+Trên Mushrooms, tại minsup $0.25$, \texttt{opt} nhanh hơn \texttt{base} khoảng 17.35 lần. Tuy nhiên ở một số ngưỡng cao hơn, chênh lệch không ổn định do chi phí dựng conditional tree và chi phí JIT có thể chiếm tỷ trọng lớn khi output nhỏ.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{../experiments/figures/time_retail.png}
+    \caption{Thời gian chạy theo minsup trên Retail.}
+    \label{fig:time-retail}
+\end{figure}
+
+Retail là dữ liệu thưa nên số itemset đầu ra nhỏ hơn nhiều so với Chess và Mushrooms. Ở minsup $0.01$, bản tối ưu đạt 813.47 ms so với 885.48 ms của base. SPMF vẫn nhanh hơn đáng kể, phản ánh khoảng cách giữa cài đặt học thuật của nhóm và thư viện Java đã được tối ưu lâu dài.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{../experiments/figures/time_T10I4D100K.png}
+    \caption{Thời gian chạy theo minsup trên T10I4D100K.}
+    \label{fig:time-t10}
+\end{figure}
+
+Trên T10I4D100K, \texttt{opt} nhanh hơn \texttt{base} ở các điểm base còn chạy được. Tại minsup $0.01$, tốc độ cải thiện là khoảng 1.39 lần; tại minsup $0.05$, cải thiện khoảng 1.58 lần. Dữ liệu này thưa và tổng hợp nên lợi ích nén tiền tố không mạnh như trên Chess.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{../experiments/figures/time_accidents.png}
+    \caption{Thời gian chạy theo minsup trên Accidents.}
+    \label{fig:time-accidents}
+\end{figure}
+
+Với Accidents, bản base bị bỏ qua vì dữ liệu vừa lớn vừa dày. Bản tối ưu vẫn chạy được ở các ngưỡng từ $0.9$ đến $0.5$, nhưng thời gian nằm quanh 4.4--5.1 giây và chậm hơn SPMF khoảng 2.66--4.97 lần. Điểm yếu chính là cài đặt của nhóm vẫn cấp phát nhiều object cho conditional trees và chưa tối ưu quản lý bộ nhớ như SPMF.
+
+\subsection{Số lượng frequent itemset theo minsup}
+
+Hình \ref{fig:count-chess} và Hình \ref{fig:count-retail} minh hoạ quan hệ giữa minsup và số itemset đầu ra. Chess tăng từ 77 itemsets ở minsup $0.95$ lên 48,731 itemsets ở minsup $0.7$. Retail tăng từ 16 itemsets ở minsup $0.05$ lên 7,589 itemsets ở minsup $0.001$.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\linewidth]{../experiments/figures/count_chess.png}
+    \caption{Số frequent itemset theo minsup trên Chess.}
+    \label{fig:count-chess}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\linewidth]{../experiments/figures/count_retail.png}
+    \caption{Số frequent itemset theo minsup trên Retail.}
+    \label{fig:count-retail}
+\end{figure}
+
+Sự khác biệt giữa hai hình cho thấy độ dày dữ liệu ảnh hưởng mạnh đến output size. Chess có giao dịch dài và nhiều item đồng xuất hiện nên khi minsup giảm, nhiều tổ hợp dài cùng trở nên phổ biến. Retail có nhiều item phân biệt nhưng giao dịch ngắn hơn, vì vậy số mẫu tăng chậm hơn trong cùng khoảng ngưỡng tương đối.
+
+\subsection{Bộ nhớ}
+
+Hình \ref{fig:memory} so sánh lượng byte cấp phát giữa base và opt tại một minsup trung bình của từng dataset. Trên Chess ở minsup $0.85$, \texttt{base} cấp phát 48.29 MB còn \texttt{opt} cấp phát 18.19 MB, giảm khoảng 2.65 lần. Trên Mushrooms ở minsup $0.3$, mức giảm là 64.71 MB xuống 27.17 MB, tức khoảng 2.38 lần. Với Retail và T10I4D100K, mức giảm nhỏ hơn, lần lượt khoảng 1.13 và 1.20 lần.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{../experiments/figures/memory.png}
+    \caption{Bộ nhớ cấp phát của base và opt tại minsup trung bình.}
+    \label{fig:memory}
+\end{figure}
+
+Lợi ích bộ nhớ đến từ mã hoá item sang số nguyên, dùng \texttt{Dict} cho children và khai thác conditional tree có tỉa sớm. Tuy nhiên, cột \texttt{alloc\_bytes} là tổng cấp phát trong Julia chứ không phải peak RSS thật của tiến trình, nên kết quả này nên được hiểu như proxy cho áp lực cấp phát.
+
+\subsection{Khả năng mở rộng}
+
+Thực nghiệm scalability lấy các prefix 10\%, 25\%, 50\%, 75\% và 100\% của Retail và Accidents. Với Retail ở minsup $0.01$, \texttt{opt} tăng từ 25.32 ms trên 8,816 giao dịch lên 493.10 ms trên 88,162 giao dịch. Bản opt nhanh hơn base ở mọi kích thước Retail trong thí nghiệm này, đặc biệt tại 25\% dữ liệu: 84.44 ms so với 419.28 ms.
+
+Với Accidents ở minsup $0.7$, \texttt{opt} tăng từ 366.74 ms trên 34,018 giao dịch lên 4126.62 ms trên 340,183 giao dịch. Xu hướng tăng không hoàn toàn tuyến tính vì số itemset đầu ra dao động quanh 522--554, nhưng chi phí dựng và duyệt conditional tree vẫn tăng theo số giao dịch.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\linewidth]{../experiments/figures/scalability.png}
+    \caption{Khả năng mở rộng theo số lượng giao dịch.}
+    \label{fig:scalability}
+\end{figure}
+
+\subsection{Ảnh hưởng của độ dài giao dịch}
+
+Thí nghiệm cuối dùng dữ liệu tổng hợp 20,000 giao dịch, 100 item, minsup $0.03$, và tăng độ dài giao dịch trung bình từ 5 đến 25. Bảng \ref{tab:txnlen} cho thấy thời gian tăng mạnh khi độ dài trung bình đạt 20 và 25.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|r|r|r|}
+        \hline
+        AvgLen & Time ms & \#Itemsets \\
+        \hline
+        5 & 87.92 & 100 \\
+        \hline
+        10 & 225.15 & 100 \\
+        \hline
+        15 & 592.81 & 100 \\
+        \hline
+        20 & 4943.11 & 5,050 \\
+        \hline
+        25 & 8436.85 & 5,050 \\
+        \hline
+    \end{tabular}
+    \caption{Ảnh hưởng của độ dài giao dịch trung bình lên thời gian chạy.}
+    \label{tab:txnlen}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\linewidth]{../experiments/figures/txnlen.png}
+    \caption{Thời gian chạy khi tăng độ dài giao dịch trung bình.}
+    \label{fig:txnlen}
+\end{figure}
+
+Kết quả này phù hợp với lý thuyết: giao dịch dài làm tăng xác suất các item cùng xuất hiện, làm FP-tree dày hơn và số mẫu phổ biến tăng. Khi output size nhảy từ 100 lên 5,050 itemsets, thời gian cũng tăng theo bậc lớn hơn nhiều so với mức tăng tuyến tính của độ dài giao dịch.
+
+\subsection{Nhận xét và hướng tối ưu tiếp theo}
+
+Thực nghiệm cho thấy bản tối ưu của nhóm đúng so với SPMF và cải thiện rõ so với bản cơ bản ở các vùng có output lớn. Lợi ích nổi bật nhất xuất hiện trên dữ liệu dày như Chess và Mushrooms, nơi cấu trúc FP-tree và single-path shortcut phát huy tác dụng. Trên dữ liệu thưa như Retail và T10I4D100K, cải thiện vẫn có nhưng nhỏ hơn vì các tiền tố chung ít hơn.
+
+Điểm yếu chính là bản tối ưu vẫn chậm hơn SPMF trên phần lớn cấu hình lớn. Hai hướng tối ưu cụ thể có thể làm tiếp là: thứ nhất, giảm cấp phát khi dựng conditional tree bằng cách tái sử dụng buffer/vector và tránh tạo nhiều \texttt{Vector} tạm; thứ hai, thay header dạng \texttt{Dict} bằng cấu trúc vector theo mã item liên tục để giảm overhead hash lookup. Ngoài ra, có thể nghiên cứu biểu diễn transaction bằng bitset cho bước tính support hoặc song song hoá các nhánh conditional tree độc lập.

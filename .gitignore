@@ -205,6 +205,21 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# LaTeX build artifacts
+report/main.pdf
+report/main.bbl
+report/main.synctex.gz
+report/main.aux
+report/main.log
+report/main.out
+report/main.toc
+report/main.lof
+report/main.lot
+report/main.xdv
+report/main-blx.bib
+report/main.fls
+report/main.fdb_latexmk
+
 # Ruff stuff:
 .ruff_cache/
 
