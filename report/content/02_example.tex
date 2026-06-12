@@ -1,1 +1,126 @@
 \section{Ví dụ minh họa}
+
+\subsection{Ví dụ 1: CSDL cơ sở}
+
+Xét cơ sở dữ liệu $D$ gồm 5 giao dịch trong Bảng \ref{tab:toy-db}. Nhóm chọn minsup tương đối $\theta = 0.6$, do đó minsup tuyệt đối là $\lceil 0.6 \times 5 \rceil = 3$.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        Giao dịch & Item \\
+        \hline
+        $T_1$ & $\{1,3,4\}$ \\
+        \hline
+        $T_2$ & $\{2,3,5\}$ \\
+        \hline
+        $T_3$ & $\{1,2,3,5\}$ \\
+        \hline
+        $T_4$ & $\{2,5\}$ \\
+        \hline
+        $T_5$ & $\{1,2,3,5\}$ \\
+        \hline
+    \end{tabular}
+    \caption{CSDL đồ chơi dùng để minh hoạ FP-Growth.}
+    \label{tab:toy-db}
+\end{table}
+
+Bước đầu tiên là đếm support của từng item. Kết quả là $\operatorname{sup}(1)=3$, $\operatorname{sup}(2)=4$, $\operatorname{sup}(3)=4$, $\operatorname{sup}(4)=1$, $\operatorname{sup}(5)=4$. Vì minsup tuyệt đối bằng 3, item $4$ bị loại. Các item còn lại được sắp theo support giảm dần, nếu bằng nhau thì theo mã item tăng dần: $2 \prec 3 \prec 5 \prec 1$.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Giao dịch & Sau khi loại item không phổ biến & Sau khi sắp theo thứ tự FP-tree \\
+        \hline
+        $T_1$ & $\{1,3\}$ & $[3,1]$ \\
+        \hline
+        $T_2$ & $\{2,3,5\}$ & $[2,3,5]$ \\
+        \hline
+        $T_3$ & $\{1,2,3,5\}$ & $[2,3,5,1]$ \\
+        \hline
+        $T_4$ & $\{2,5\}$ & $[2,5]$ \\
+        \hline
+        $T_5$ & $\{1,2,3,5\}$ & $[2,3,5,1]$ \\
+        \hline
+    \end{tabular}
+    \caption{Các giao dịch sau bước tỉa và sắp thứ tự.}
+    \label{tab:toy-ordered}
+\end{table}
+
+Chèn tuần tự các giao dịch trong Bảng \ref{tab:toy-ordered} tạo ra FP-tree đã minh hoạ ở Hình \ref{fig:fptree-toy}. Từ cây này, thuật toán khai thác từng item thông qua conditional pattern base:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Item hậu tố & Conditional pattern base & Itemset phổ biến sinh ra \\
+        \hline
+        $1$ & $(3):1$, $(2,3,5):2$ & $\{1\}:3$, $\{1,3\}:3$ \\
+        \hline
+        $5$ & $(2,3):3$, $(2):1$ & $\{5\}:4$, $\{2,5\}:4$, $\{3,5\}:3$, $\{2,3,5\}:3$ \\
+        \hline
+        $3$ & $\emptyset:1$, $(2):3$ & $\{3\}:4$, $\{2,3\}:3$ \\
+        \hline
+        $2$ & $\emptyset:4$ & $\{2\}:4$ \\
+        \hline
+    \end{tabular}
+    \caption{Khai thác conditional pattern base trong ví dụ cơ sở.}
+    \label{tab:toy-conditional}
+\end{table}
+
+Tập kết quả cuối cùng gồm:
+\[
+\begin{aligned}
+&\{1\}:3,\ \{2\}:4,\ \{3\}:4,\ \{5\}:4,\\
+&\{1,3\}:3,\ \{2,3\}:3,\ \{2,5\}:4,\ \{3,5\}:3,\\
+&\{2,3,5\}:3.
+\end{aligned}
+\]
+
+Để kiểm tra chéo thủ công, ta liệt kê các itemset từ các item phổ biến $\{1,2,3,5\}$. Các cặp có support đạt ngưỡng là $\{1,3\}$, $\{2,3\}$, $\{2,5\}$ và $\{3,5\}$. Trong các bộ ba, chỉ $\{2,3,5\}$ xuất hiện trong $T_2,T_3,T_5$ nên đạt support 3. Không có bộ bốn nào đạt ngưỡng vì $\{1,2,3,5\}$ chỉ xuất hiện trong hai giao dịch. Kết quả này trùng với kết quả từ FP-Growth.
+
+Nếu xét tập phổ biến tối đại, hai itemset tối đại là $\{1,3\}:3$ và $\{2,3,5\}:3$. Các itemset còn lại đều là tập con của ít nhất một trong hai itemset này.
+
+\subsection{Ví dụ 2: Trường hợp single-path}
+
+Trường hợp đặc biệt quan trọng của FP-Growth là FP-tree chỉ có một đường đi. Khi đó thuật toán không cần dựng tiếp conditional tree; mọi frequent itemset có thể sinh trực tiếp từ các tổ hợp con trên đường đi.
+
+Xét CSDL trong Bảng \ref{tab:single-path-db} với $\theta = 0.6$, minsup tuyệt đối bằng 3.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        Giao dịch & Item \\
+        \hline
+        $T_1$ & $\{A,B,C,D\}$ \\
+        \hline
+        $T_2$ & $\{A,B,C\}$ \\
+        \hline
+        $T_3$ & $\{A,B\}$ \\
+        \hline
+        $T_4$ & $\{A,B,C\}$ \\
+        \hline
+        $T_5$ & $\{A,B,C,D\}$ \\
+        \hline
+    \end{tabular}
+    \caption{CSDL thiết kế để tạo FP-tree một nhánh.}
+    \label{tab:single-path-db}
+\end{table}
+
+Support của các item là $\operatorname{sup}(A)=5$, $\operatorname{sup}(B)=5$, $\operatorname{sup}(C)=4$, $\operatorname{sup}(D)=2$. Item $D$ bị loại vì support nhỏ hơn 3. Sau khi tỉa, mọi giao dịch đều có dạng tiền tố của $[A,B,C]$, nên FP-tree chỉ còn một đường:
+\[
+    root \rightarrow A:5 \rightarrow B:5 \rightarrow C:4.
+\]
+
+Với single-path, mọi tập con không rỗng của $\{A,B,C\}$ đều phổ biến. Support của một itemset bằng count nhỏ nhất trên các node thuộc itemset đó:
+\[
+\begin{aligned}
+&\{A\}:5,\ \{B\}:5,\ \{C\}:4,\\
+&\{A,B\}:5,\ \{A,C\}:4,\ \{B,C\}:4,\\
+&\{A,B,C\}:4.
+\end{aligned}
+\]
+
+Trường hợp này đặc biệt vì conditional tree càng sâu thường càng nhỏ và dễ trở thành single-path. Tối ưu single-path giúp FP-Growth chuyển một nhánh đệ quy thành bài toán sinh tổ hợp trực tiếp trên một đường đi ngắn, giảm đáng kể chi phí khi dữ liệu có cấu trúc tiền tố lồng nhau.

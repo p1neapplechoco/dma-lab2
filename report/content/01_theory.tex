@@ -2,4 +2,133 @@
 
 \subsection{Bài toán Frequent Itemset Mining}
 
-\subsection{Thuật toán FPMax}
+Gọi $I = \{i_1, i_2, \ldots, i_m\}$ là tập tất cả item. Một cơ sở dữ liệu giao dịch được ký hiệu là $D = \{T_1, T_2, \ldots, T_n\}$, trong đó mỗi giao dịch $T_j \subseteq I$. Một itemset $X$ là một tập con của $I$. Ta nói giao dịch $T_j$ chứa $X$ nếu $X \subseteq T_j$.
+
+Độ hỗ trợ tuyệt đối của $X$ trên $D$ là số giao dịch chứa $X$:
+\[
+    \operatorname{sup}(X) = |\{T_j \in D \mid X \subseteq T_j\}|.
+\]
+Độ hỗ trợ tương đối là $\operatorname{sup}_{rel}(X) = \operatorname{sup}(X) / |D|$. Với ngưỡng hỗ trợ tối thiểu $\theta$, itemset $X$ được gọi là phổ biến nếu $\operatorname{sup}_{rel}(X) \geq \theta$, hay tương đương $\operatorname{sup}(X) \geq \lceil \theta |D| \rceil$.
+
+Bên cạnh tập phổ biến thông thường, hai biến thể quan trọng là tập đóng và tập tối đại. Một itemset phổ biến $X$ là \textit{closed itemset} nếu không tồn tại itemset phổ biến $Y$ sao cho $X \subset Y$ và $\operatorname{sup}(X) = \operatorname{sup}(Y)$. Một itemset phổ biến $X$ là \textit{maximal itemset} nếu không tồn tại itemset phổ biến $Y$ sao cho $X \subset Y$. Do đó mọi maximal itemset đều là closed itemset, nhưng không phải mọi closed itemset đều là maximal itemset.
+
+Tính chất quan trọng nhất của FIM là tính phản đơn điệu của support, thường được gọi là tính chất Apriori \cite{Agrawal1993AssociationRules}. Nếu $X \subseteq Y$ thì mọi giao dịch chứa $Y$ cũng chứa $X$, nên:
+\[
+    \operatorname{sup}(Y) \leq \operatorname{sup}(X).
+\]
+Hệ quả là nếu $X$ không phổ biến thì mọi siêu tập của $X$ cũng không phổ biến. Ngược lại, nếu $Y$ phổ biến thì mọi tập con của $Y$ cũng phổ biến. Tính chất này cho phép các thuật toán FIM tỉa không gian tìm kiếm rất mạnh.
+
+\subsection{Ý tưởng FP-Growth}
+
+Apriori khai thác tính chất phản đơn điệu bằng cách sinh ứng viên theo từng mức độ dài. Cách làm này dễ hiểu nhưng phải quét cơ sở dữ liệu nhiều lần và có thể sinh rất nhiều ứng viên trung gian. FP-Growth thay đổi hướng tiếp cận: thuật toán chỉ quét dữ liệu hai lần để xây dựng một cây nén gọi là FP-tree, sau đó khai thác mẫu bằng các cơ sở mẫu điều kiện mà không cần sinh ứng viên toàn cục \cite{Han2000FPGrowth}.
+
+Trực giác của FP-Growth là nhiều giao dịch có tiền tố giống nhau sau khi các item được sắp theo support giảm dần. Khi chèn các giao dịch đã sắp xếp vào cùng một cây, các tiền tố chung được gộp lại và đếm bằng biến \textit{count} trên node. Header table lưu danh sách các node ứng với cùng một item, nhờ đó thuật toán có thể tìm nhanh các đường đi kết thúc tại item đang xét. Với mỗi item, FP-Growth thu thập conditional pattern base, dựng conditional FP-tree, rồi đệ quy khai thác các mẫu có hậu tố là item đó.
+
+\subsection{Cấu trúc dữ liệu FP-tree}
+
+Một node trong FP-tree gồm bốn thành phần: item đang đại diện, biến đếm số giao dịch đi qua node, con trỏ tới node cha, và tập các node con. Root không chứa item thật. Header table ánh xạ mỗi item tới danh sách các node mang item đó trong cây.
+
+Ví dụ với cơ sở dữ liệu đồ chơi ở Chương 2 và $\theta = 0.6$, các item phổ biến là $2,3,5,1$ với support lần lượt $4,4,4,3$. Sau khi loại item không phổ biến và sắp item theo support giảm dần, FP-tree có dạng khái niệm trong Hình \ref{fig:fptree-toy}.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        level distance=1.25cm,
+        level 1/.style={sibling distance=4.2cm},
+        level 2/.style={sibling distance=2.3cm},
+        level 3/.style={sibling distance=1.8cm},
+        every node/.style={draw, rounded corners, align=center, minimum width=1.7cm}
+    ]
+    \node {root}
+        child { node {$3:1$}
+            child { node {$1:1$} }
+        }
+        child { node {$2:4$}
+            child { node {$3:3$}
+                child { node {$5:3$}
+                    child { node {$1:2$} }
+                }
+            }
+            child { node {$5:1$} }
+        };
+    \end{tikzpicture}
+    \caption{FP-tree minh hoạ cho CSDL đồ chơi ở Chương 2 với minsup $=0.6$.}
+    \label{fig:fptree-toy}
+\end{figure}
+
+Cây trên nén năm giao dịch thành sáu node item. Hai giao dịch $[2,3,5,1]$ trùng tiền tố hoàn toàn nên được biểu diễn bằng một đường đi có count tăng lên. Đây là nguồn tiết kiệm bộ nhớ chính của FP-Growth trên dữ liệu có nhiều tiền tố chung.
+
+\subsection{Giả mã FP-Growth}
+
+\begin{algorithm}[H]
+\caption{FP-Growth}
+\begin{algorithmic}[1]
+\Require Cơ sở dữ liệu giao dịch $D$, ngưỡng $\theta$
+\Ensure Tập frequent itemset và support tương ứng
+\State Đếm support của từng item trong $D$
+\State Loại các item có support nhỏ hơn $\lceil \theta |D| \rceil$
+\State Sắp item trong mỗi giao dịch theo support giảm dần, nếu bằng nhau thì theo mã item
+\State Chèn các giao dịch đã sắp vào FP-tree và cập nhật header table
+\State Gọi \Call{Mine}{$tree$, $\emptyset$}
+\Function{Mine}{$tree$, $suffix$}
+    \If{$tree$ chỉ có một đường đi}
+        \State Sinh mọi tập con không rỗng của đường đi
+        \State Ghi nhận mỗi tập con hợp với $suffix$, support là count nhỏ nhất trên tập con
+        \State \Return
+    \EndIf
+    \For{mỗi item $a$ trong header table}
+        \State $pattern \gets suffix \cup \{a\}$
+        \State Ghi nhận $pattern$ với support của $a$ trong $tree$
+        \State Thu thập conditional pattern base của $a$
+        \State Loại item không đủ support trong conditional pattern base
+        \State Dựng conditional FP-tree
+        \If{conditional FP-tree không rỗng}
+            \State \Call{Mine}{conditional FP-tree, $pattern$}
+        \EndIf
+    \EndFor
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+Điểm mấu chốt trong giả mã là thuật toán không sinh ứng viên toàn cục như Apriori. Mỗi lần đệ quy chỉ làm việc trên phần dữ liệu điều kiện liên quan tới hậu tố đang xét. Khi cây điều kiện chỉ còn một đường đi, thuật toán có thể sinh trực tiếp các tổ hợp trên đường đi đó, tránh dựng thêm cây không cần thiết.
+
+\subsection{Phân tích độ phức tạp}
+
+Trong bước xây dựng cây, thuật toán cần một lần quét để đếm support và một lần quét để chèn các giao dịch đã tỉa vào cây. Nếu $L$ là tổng số item sau tỉa trên toàn bộ giao dịch, chi phí xây dựng xấp xỉ $O(L \log \bar{\ell})$ nếu phải sắp từng giao dịch, với $\bar{\ell}$ là độ dài giao dịch trung bình sau tỉa. Khi dùng thứ tự mã hoá cố định theo support, chi phí sắp có thể giảm vì chỉ cần so thứ tự số nguyên.
+
+Chi phí khai thác phụ thuộc mạnh vào số lượng mẫu phổ biến và cấu trúc conditional tree. Trường hợp tốt xảy ra khi minsup cao hoặc dữ liệu ít giao nhau, số conditional pattern base nhỏ và cây nhanh rỗng. Trường hợp thuận lợi khác là single-path, vì mọi mẫu có thể sinh trực tiếp từ một đường đi. Trường hợp xấu nhất vẫn có thể tăng theo hàm mũ theo số item phổ biến, do số frequent itemset có thể là $2^m - 1$ khi mọi tổ hợp đều phổ biến. Vì vậy FP-Growth giảm chi phí trung gian so với Apriori, nhưng không thể vượt qua giới hạn do kích thước output.
+
+Không gian lưu trữ gồm FP-tree, header table, conditional trees trong đệ quy và bảng kết quả. FP-tree có số node tối đa bằng tổng số item sau tỉa trên toàn bộ giao dịch, nhưng thường nhỏ hơn nhiều nhờ nén tiền tố. Các yếu tố ảnh hưởng lớn nhất tới hiệu năng gồm: số giao dịch, số item phân biệt, độ dài giao dịch trung bình, độ dày của dữ liệu, minsup, và số lượng frequent itemset đầu ra.
+
+\subsection{Thuật toán FP-Max}
+
+FP-Max khai thác tập phổ biến tối đại thay vì toàn bộ tập phổ biến \cite{Grahne2003FPMax}. Một itemset phổ biến là tối đại nếu không có siêu tập phổ biến nào chứa nó. Ý tưởng của FP-Max là dùng cùng cơ chế FP-tree/conditional pattern base như FP-Growth, nhưng duy trì một danh sách các maximal frequent itemsets đã tìm được (MFI list). Khi xét một head hiện tại và tail còn có thể mở rộng, nếu $head \cup tail$ đã là tập con của một MFI có sẵn thì toàn bộ nhánh đó có thể bị tỉa.
+
+\begin{algorithm}[H]
+\caption{FP-Max}
+\begin{algorithmic}[1]
+\Require FP-tree, head hiện tại, danh sách MFI
+\Ensure Danh sách maximal frequent itemsets
+\If{FP-tree chỉ có một đường đi}
+    \State $candidate \gets head \cup$ các item trên đường đi
+    \State Chèn $candidate$ vào MFI nếu nó không là tập con của MFI hiện có
+    \State Xoá các MFI cũ là tập con nghiêm ngặt của $candidate$
+    \State \Return
+\EndIf
+\State Sắp các item trong header theo support tăng dần
+\For{mỗi item $a$}
+    \State $head \gets head \cup \{a\}$
+    \State Tạo conditional pattern base và tail phổ biến của $a$
+    \If{$head \cup tail$ không là tập con của MFI nào}
+        \State Dựng conditional FP-tree và đệ quy
+    \EndIf
+    \State Bỏ $a$ khỏi head
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+FP-Max hữu ích khi người dùng chỉ cần biểu diễn cô đọng của các mẫu phổ biến. Từ các maximal itemsets có thể biết vùng biên của không gian frequent itemset, nhưng không thể khôi phục chính xác support của mọi tập con nếu không quét lại dữ liệu. Vì vậy trong đồ án này FP-Max được cài đặt như một nhánh bổ sung, còn phần thực nghiệm chính tập trung vào FP-Growth và bản tối ưu.
+
+\subsection{Vị trí lịch sử}
+
+Apriori đặt nền móng cho FIM bằng tính chất phản đơn điệu, nhưng bị giới hạn bởi số lần quét dữ liệu và số lượng ứng viên lớn. FP-Growth giải quyết hạn chế này bằng FP-tree và khai thác mẫu không sinh ứng viên. Sau đó, nhiều hướng tối ưu tiếp tục xuất hiện: các thuật toán tập đóng/tối đại để giảm kích thước output, các thuật toán dạng dọc như Eclat dùng tidset/diffset, và các thư viện thực nghiệm như SPMF cung cấp nhiều cài đặt tham chiếu. Trong dòng phát triển này, FP-Growth vẫn là một thuật toán nền tảng vì cân bằng tốt giữa tính dễ hiểu, khả năng nén dữ liệu và hiệu quả thực nghiệm trên nhiều loại dữ liệu giao dịch.

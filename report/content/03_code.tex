@@ -1,1 +1,84 @@
 \section{Cài đặt}
+
+\subsection{Môi trường và tổ chức mã nguồn}
+
+Cài đặt chính của nhóm sử dụng Julia theo đúng ưu tiên của đề bài. Mã nguồn được tổ chức như một package tên \texttt{FrequentItemsetMining}, trong đó file \texttt{src/FrequentItemsetMining.jl} là module entry và include các file con. Bố cục chính của repo như sau:
+
+\begin{itemize}
+    \item \texttt{src/structures.jl}: định nghĩa \texttt{Transaction}, \texttt{DataLoader}, \texttt{FPNode}, \texttt{FPNodeOpt}.
+    \item \texttt{src/data\_loader.jl}: đọc dữ liệu giao dịch, hỗ trợ dòng item cách nhau bằng khoảng trắng theo định dạng SPMF và dòng có dấu phẩy.
+    \item \texttt{src/algorithm/fp\_growth.jl}: cài đặt FP-Growth cơ bản.
+    \item \texttt{src/algorithm/fp\_growth\_opt.jl}: cài đặt FP-Growth tối ưu.
+    \item \texttt{src/algorithm/fp\_max.jl}: cài đặt FP-Max.
+    \item \texttt{src/io.jl}: xuất itemsets theo dạng \texttt{item item ... \#SUP: count}.
+    \item \texttt{main.jl}: giao diện dòng lệnh.
+    \item \texttt{test/}: bộ unit test correctness và benchmark smoke test.
+    \item \texttt{experiments/}: script đối chiếu SPMF, sinh CSV và sinh hình cho Chương 4.
+\end{itemize}
+
+Lệnh chạy chương trình có dạng:
+
+\begin{lstlisting}[language=bash, caption={Cách chạy chương trình từ dòng lệnh.}]
+julia --project=. main.jl <input_path> <minsup> [fp-growth|fp-growth-opt|fp-max] [output_path]
+\end{lstlisting}
+
+Ví dụ, để khai thác tập phổ biến trên CSDL đồ chơi với ngưỡng $0.6$:
+
+\begin{lstlisting}[language=bash, caption={Ví dụ chạy FP-Growth tối ưu.}]
+julia --project=. main.jl data/toy/test_1.txt 0.6 fp-growth-opt output.txt
+\end{lstlisting}
+
+\subsection{Cài đặt FP-Growth cơ bản}
+
+Bản cơ bản dùng node lưu item dạng \texttt{String}. Mỗi node có \texttt{count}, con trỏ \texttt{parent} và tập \texttt{children}. Khi chèn item vào một node cha, chương trình duyệt các con hiện có để tìm child cùng item; nếu có thì tăng count, nếu không thì tạo node mới. Sau khi xây cây, hàm \texttt{rebuild\_nodes\_table!} duyệt cây để dựng header table.
+
+Quy trình \texttt{fit!} của \texttt{FPGrowth} gồm bốn bước. Thứ nhất, gom toàn bộ giao dịch và tính minsup tuyệt đối bằng $\lceil \theta n \rceil$. Thứ hai, đếm support từng item và loại item không đủ ngưỡng. Thứ ba, trong mỗi giao dịch, giữ lại item phổ biến và sắp theo \texttt{(-support, item)} để kết quả có thứ tự ổn định. Cuối cùng, chèn các giao dịch vào FP-tree.
+
+Hàm \texttt{get\_frequent\_itemsets} khai thác từng item bằng \texttt{mine\_roads}. Với mỗi node của item đang xét, hàm đi ngược theo con trỏ cha để lấy đường tiền tố. Các đường tiền tố tạo thành conditional pattern base. Bản cơ bản sau đó đếm các item hợp lệ trong base, sinh các tổ hợp con của chúng và tính support bằng cách kiểm tra đường nào chứa tổ hợp đó. Cách này dễ kiểm chứng và phù hợp làm baseline, nhưng có thể tốn kém khi conditional base rộng vì phải enumerate nhiều tổ hợp.
+
+\subsection{Cài đặt FP-Growth tối ưu}
+
+Bản \texttt{FPGrowthOpt} giữ cùng API với bản cơ bản nhưng thay đổi cấu trúc dữ liệu và cách khai thác. Các item được mã hoá từ \texttt{String} sang \texttt{Int}. Mỗi node tối ưu lưu \texttt{item::Int}, \texttt{count::Int}, \texttt{parent}, và \texttt{children::Dict\{Int, FPNodeOpt\}}. Nhờ vậy thao tác tìm child khi chèn path có chi phí trung bình $O(1)$ thay vì duyệt tuyến tính qua tập con.
+
+Các kỹ thuật tối ưu chính gồm:
+
+\begin{itemize}
+    \item \textbf{Integer encoding}: khai thác trên mã số nguyên và chỉ giải mã về chuỗi ở bước cuối.
+    \item \textbf{Header table typed}: header ánh xạ \texttt{Int} sang danh sách node, giảm overhead so với item chuỗi.
+    \item \textbf{Recursive conditional FP-tree}: khai thác đúng hướng FP-Growth chuẩn, tránh enumerate tổ hợp trên conditional base rộng như bản cơ bản.
+    \item \textbf{Single-path shortcut}: nếu cây điều kiện chỉ có một nhánh, sinh trực tiếp mọi tổ hợp con của nhánh đó.
+    \item \textbf{Tỉa sớm}: trong mỗi conditional pattern base, item có support nhỏ hơn minsup tuyệt đối bị loại trước khi dựng cây điều kiện.
+    \item \textbf{Type-stable hot loop}: các trường dữ liệu được khai báo kiểu cụ thể và một số vòng lặp dùng \texttt{@inbounds} khi truy cập vector.
+\end{itemize}
+
+Output của bản tối ưu vẫn là \texttt{Dict\{Tuple\{Vararg\{String\}\}, Int\}}, giống bản cơ bản. Điều này giúp unit test có thể so sánh trực tiếp:
+
+\begin{center}
+\texttt{get\_frequent\_itemsets(FPGrowthOpt) == get\_frequent\_itemsets(FPGrowth)}
+\end{center}
+
+\subsection{Cài đặt FP-Max}
+
+\texttt{FPMax} sử dụng \texttt{FPGrowth} để dựng cây ban đầu, đồng thời lưu lại toàn bộ giao dịch dưới dạng \texttt{Set\{String\}} để tính support của maximal itemsets ở bước cuối. Hàm \texttt{get\_maximal\_itemsets} duy trì danh sách các MFI dưới dạng vector các set. Khi có candidate mới, hàm \texttt{insert\_mfi!} bỏ qua candidate nếu nó là tập con của một MFI có sẵn; ngược lại, hàm xoá các MFI cũ là tập con nghiêm ngặt của candidate rồi thêm candidate mới.
+
+Trong đệ quy FP-Max, nếu cây là single-path thì thuật toán hợp head hiện tại với toàn bộ item trên đường đi và cập nhật MFI. Nếu cây có nhiều nhánh, thuật toán xét các item trong header theo support tăng dần, tạo conditional pattern base, tìm tail còn phổ biến, rồi dùng kiểm tra $head \cup tail$ để tỉa các nhánh chắc chắn không sinh MFI mới.
+
+\subsection{Kiểm thử tự động}
+
+Bộ kiểm thử trong \texttt{test/test\_correctness.jl} gồm ba nhóm chính. Nhóm đầu kiểm tra parser với ba định dạng: \texttt{1, 2, 3}, \texttt{\{1, 2, 3\}}, và \texttt{1 2 3}. Nhóm thứ hai kiểm tra FP-Growth cơ bản trên CSDL đồ chơi ở Chương 2, kỳ vọng đúng 9 frequent itemsets với support tương ứng. Nhóm thứ ba kiểm tra FP-Max trên cùng CSDL, kỳ vọng hai maximal itemsets $\{1,3\}$ và $\{2,3,5\}$.
+
+Ngoài ra, test đối chiếu \texttt{FPGrowthOpt} với \texttt{FPGrowth} trên \texttt{data/toy/test\_1.txt}, \texttt{data/toy/test\_2.txt} và \texttt{data/benchmark/chess.txt} ở nhiều giá trị minsup. Test benchmark trong \texttt{test/test\_benchmark.jl} đo thời gian và số byte cấp phát trên \texttt{chess} với minsup $0.9$, sau đó kiểm tra lại kết quả của bản tối ưu và bản cơ bản phải trùng nhau. Lệnh kiểm thử chuẩn là:
+
+\begin{lstlisting}[language=bash, caption={Lệnh chạy bộ test.}]
+julia --project=. test/runtests.jl
+\end{lstlisting}
+
+\subsection{Xử lý đầu vào và đầu ra}
+
+Input chuẩn của đồ án là mỗi giao dịch trên một dòng, item cách nhau bằng khoảng trắng theo định dạng SPMF. Parser cũng hỗ trợ dòng có dấu phẩy để thuận tiện cho dữ liệu giỏ hàng. Output của \texttt{write\_itemsets} sắp các itemset theo độ dài và thứ tự từ điển, sau đó ghi mỗi dòng theo dạng:
+
+\begin{lstlisting}[caption={Định dạng output itemset.}]
+item1 item2 ... #SUP: support_count
+\end{lstlisting}
+
+Định dạng này tương thích với output của SPMF, giúp script thực nghiệm đọc kết quả của hai phía và so sánh từng itemset theo support.
