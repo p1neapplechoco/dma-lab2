@@ -30,7 +30,32 @@ Không sử dụng bất kỳ thư viện FIM có sẵn nào. SPMF chỉ đượ
 
 ## Môi trường và cài đặt
 
-Yêu cầu **Julia ≥ 1.9** (kiểm thử trên Julia 1.12). Cài đặt phụ thuộc từ `Manifest.toml` đã khoá để đảm bảo tái lập:
+Yêu cầu **Julia ≥ 1.9** (kiểm thử trên Julia 1.12).
+
+### Cài đặt Julia
+
+Cách khuyến nghị là dùng `juliaup` — trình quản lý phiên bản chính thức của Julia.
+
+- **Linux / macOS:**
+
+  ```bash
+  curl -fsSL https://install.julialang.org | sh
+  ```
+
+- **Windows:** cài từ Microsoft Store (tìm "Julia") hoặc chạy `winget install julia -s msstore`.
+
+Sau khi cài, mở terminal mới và kiểm tra:
+
+```bash
+juliaup add 1.12      # tuỳ chọn: ghim đúng phiên bản đã kiểm thử
+julia --version       # kỳ vọng: julia version 1.12.x (hoặc >= 1.9)
+```
+
+Nếu không muốn dùng `juliaup`, có thể tải bản cài sẵn cho từng hệ điều hành tại <https://julialang.org/downloads/> rồi thêm thư mục `bin` của Julia vào `PATH`.
+
+### Cài đặt phụ thuộc
+
+Từ thư mục gốc của đồ án, cài phụ thuộc theo `Manifest.toml` đã khoá để đảm bảo tái lập:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
