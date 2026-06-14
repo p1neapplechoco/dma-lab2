@@ -1,6 +1,110 @@
-\section{Phụ lục}
+\section{Phụ lục: Hướng dẫn tái lập}
+\label{sec:appendix-repro}
+
+Phụ lục này tóm tắt các bước tái lập toàn bộ mã nguồn, kiểm thử và thực nghiệm của đồ án. Nội dung tương ứng với tệp \texttt{README.md} trong kho mã nguồn; mọi lệnh đều chạy từ thư mục gốc của repo.
+
+\subsection{Cấu trúc thư mục}
+
 \begin{itemize}
-\item Template này \textbf{không phải} là template chính thức của Khoa Công nghệ thông tin - Trường Đại học Khoa học Tự nhiên.
-\item Các hình ảnh, bảng biểu, thuật toán trong template chỉ mang tính chất ví dụ.
-\item Nhóm tác giả phân phối \textbf{miễn phí} template này \href{https://github.com/khongsomeo/hcmus-unofficial-report-template}{trên GitHub} và \href{https://www.overleaf.com/latex/templates/hcmus-report-template/zyrhmsxynwqs}{trên Overleaf} với \href{https://github.com/khongsomeo/hcmus-unofficial-report-template/blob/main/LICENSE}{Giấy phép GNU General Public License v3.0}. Nhóm tác giả không chịu trách nhiệm với các bản phân phối không nằm trong hai kênh phân phối chính thức nêu trên.
+    \item \texttt{src/}: package Julia \texttt{FrequentItemsetMining} (FP-Growth cơ bản, FP-Growth tối ưu, FP-Max, sinh luật kết hợp, I/O).
+    \item \texttt{main.jl}: giao diện dòng lệnh.
+    \item \texttt{test/}: bộ kiểm thử correctness và benchmark.
+    \item \texttt{experiments/}: harness thực nghiệm Chương \ref{sec:evaluation} và ứng dụng Chương \ref{sec:application}.
+    \item \texttt{data/}: CSDL toy, benchmark và Groceries.
+    \item \texttt{docs/Report.pdf}: báo cáo.
+    \item \texttt{Project.toml}, \texttt{Manifest.toml}: khai báo và khoá phiên bản phụ thuộc.
 \end{itemize}
+
+Đồ án không sử dụng bất kỳ thư viện FIM có sẵn nào; SPMF chỉ được gọi như một công cụ hộp đen để đối chiếu kết quả ở Chương \ref{sec:evaluation}.
+
+\subsection{Môi trường và cài đặt}
+
+Yêu cầu Julia $\geq 1.9$ (đã kiểm thử trên Julia 1.12). Cách khuyến nghị là dùng \texttt{juliaup} — trình quản lý phiên bản chính thức của Julia:
+
+\begin{lstlisting}[language=bash, caption={Cài Julia bằng juliaup (Linux/macOS) và ghim phiên bản.}]
+curl -fsSL https://install.julialang.org | sh
+juliaup add 1.12      # tùy chọn: ghim đúng phiên bản đã kiểm thử
+julia --version       # kỳ vọng: julia version 1.12.x (hoặc >= 1.9)
+\end{lstlisting}
+
+Trên Windows có thể cài từ Microsoft Store (tìm ``Julia'') hoặc chạy \texttt{winget install julia -s msstore}. Sau khi có Julia, cài phụ thuộc theo \texttt{Manifest.toml} đã khoá để đảm bảo tái lập:
+
+\begin{lstlisting}[language=bash, caption={Cài đặt phụ thuộc.}]
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+\end{lstlisting}
+
+\subsection{Chạy chương trình}
+
+Giao diện dòng lệnh nhận đường dẫn dữ liệu, ngưỡng minsup tương đối, thuật toán và đường dẫn output (tùy chọn):
+
+\begin{lstlisting}[language=bash, caption={Cú pháp dòng lệnh.}]
+julia --project=. main.jl <input_path> <minsup> [fp-growth|fp-growth-opt|fp-max|rules] [output_path]
+\end{lstlisting}
+
+Ví dụ khai thác tập phổ biến trên CSDL toy với minsup $0.6$:
+
+\begin{lstlisting}[language=bash, caption={Khai thác itemset.}]
+julia --project=. main.jl data/toy/test_1.txt 0.6 fp-growth-opt output.txt
+\end{lstlisting}
+
+Đầu vào theo định dạng SPMF (mỗi giao dịch một dòng, item cách nhau bằng khoảng trắng; parser cũng chấp nhận dòng có dấu phẩy). Đầu ra theo dạng \texttt{item1 item2 ... \#SUP: support\_count}.
+
+Chế độ \texttt{rules} sinh trực tiếp luật kết hợp (lift $> 1$, sắp theo lift giảm dần) từ tập phổ biến. Ngưỡng confidence đặt qua biến môi trường \texttt{MINCONF} (mặc định $0.2$), số luật in ra qua \texttt{TOPK} (mặc định $10$). Với dữ liệu mà tên item chứa khoảng trắng (ví dụ Groceries), đặt \texttt{SEP=comma} để parser chỉ tách theo dấu phẩy:
+
+\begin{lstlisting}[language=bash, caption={Sinh luật kết hợp trên Groceries.}]
+SEP=comma julia --project=. main.jl data/groceries.txt 0.01 rules rules.csv
+\end{lstlisting}
+
+Lệnh trên tái tạo đúng kết quả phần ứng dụng: $333$ frequent itemsets và $231$ luật có lift lớn hơn $1$.
+
+\subsection{Kiểm thử}
+
+\begin{lstlisting}[language=bash, caption={Chạy bộ kiểm thử tự động.}]
+julia --project=. test/runtests.jl
+\end{lstlisting}
+
+Bộ kiểm thử gồm: kiểm tra parser ba định dạng; FP-Growth và FP-Max trên CSDL toy ở Chương \ref{sec:example}; đối chiếu bản tối ưu với bản cơ bản trên năm CSDL (hai toy và ba benchmark: chess, mushrooms, retail); kiểm tra sinh luật kết hợp; và benchmark đối chiếu base/opt trên chess. Các tỉ lệ tốc độ/bộ nhớ in trong dòng \texttt{[bench]} là số đo on-the-fly, phụ thuộc máy và lần chạy (JIT warm-up, GC) nên có thể dao động, không nhất thiết trùng với số liệu cố định trong báo cáo.
+
+\subsection{Tái lập thực nghiệm Chương 4}
+
+Thực nghiệm cần SPMF (làm chuẩn đối chiếu, yêu cầu Java $\geq 8$) và đầy đủ năm tập benchmark.
+
+\begin{enumerate}
+    \item Tải SPMF jar (bị \texttt{.gitignore} vì nặng):
+\begin{lstlisting}[language=bash]
+bash experiments/download_spmf.sh
+\end{lstlisting}
+    \item Tải dataset. Bốn tập chess, mushrooms, retail, T10I4D100K đã có sẵn trong \texttt{data/benchmark/}; bổ sung \texttt{accidents.txt} ($>25$ MB, không đưa vào repo) từ Google Drive vào \texttt{data/benchmark/}:
+
+    \href{https://drive.google.com/drive/folders/1TuKapS5SYeWS1D8Zs4gegZHlqNAh36NE?usp=sharing}{Thư mục dữ liệu trên Google Drive}.
+    \item Chạy thực nghiệm (sinh các file CSV trong \texttt{experiments/results/}):
+\begin{lstlisting}[language=bash]
+julia --project=. experiments/run_experiments.jl
+\end{lstlisting}
+    Có thể giới hạn tập dữ liệu qua biến môi trường, ví dụ bỏ qua accidents:
+\begin{lstlisting}[language=bash]
+EXP_DATASETS=chess,mushrooms,retail,T10I4D100K julia --project=. experiments/run_experiments.jl
+\end{lstlisting}
+    \item Đo peak RSS thật (sinh \texttt{experiments/results/memory.csv}):
+\begin{lstlisting}[language=bash]
+julia --project=. experiments/measure_memory.jl
+\end{lstlisting}
+    \item Sinh biểu đồ (vào \texttt{experiments/figures/}):
+\begin{lstlisting}[language=bash]
+julia --project=. experiments/make_figures.jl
+\end{lstlisting}
+\end{enumerate}
+
+\subsection{Tái lập ứng dụng Chương 5}
+
+Sinh luật kết hợp trên tập Groceries (minsup $0.01$, minconf $0.2$), in top-10 luật theo lift và ghi \texttt{experiments/results/rules\_groceries.csv}:
+
+\begin{lstlisting}[language=bash, caption={Phân tích giỏ hàng.}]
+julia --project=. experiments/application.jl
+\end{lstlisting}
+
+Kết quả mong đợi: $333$ frequent itemsets và $231$ luật có lift lớn hơn $1$. Kết quả này cũng đạt được trực tiếp qua chế độ \texttt{rules} của \texttt{main.jl} như ở mục Chạy chương trình.
+
+\subsection{Tính tái lập}
+
+Mọi dữ liệu tổng hợp dùng seed cố định (\texttt{experiments/datagen.jl}, seed $42$); \texttt{Manifest.toml} khoá toàn bộ phiên bản phụ thuộc. Số đếm (\#frequent itemsets, \#luật) và kết quả correctness là tất định nên chạy lại cho ra cùng giá trị; riêng các số đo thời gian và peak RSS có thể dao động theo máy và lần chạy do JIT, GC và tải hệ thống.
