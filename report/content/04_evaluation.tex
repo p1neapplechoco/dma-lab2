@@ -3,14 +3,16 @@
 
 \subsection{Thiết lập thực nghiệm}
 
-Thực nghiệm được thiết kế để kiểm tra sáu khía cạnh: tính đúng đắn so với SPMF, thời gian chạy theo minsup, số lượng frequent itemset theo minsup, bộ nhớ cấp phát, khả năng mở rộng theo số giao dịch, và ảnh hưởng của độ dài giao dịch trung bình. Kết quả được lưu trong các file CSV ở \texttt{experiments/results/}; hình minh hoạ được sinh vào \texttt{experiments/figures/}.
+Thực nghiệm được thiết kế theo hai tầng. Tầng thứ nhất kiểm tra thuật toán chính FP-Max bằng unit test và so sánh với cách liệt kê tối đại thủ công/brute force trên dữ liệu nhỏ. Tầng thứ hai kiểm tra FP-tree/FP-Growth engine, vì đây là prerequisite mà FP-Max dựa vào để dựng conditional tree và tính support. Với tầng engine, nhóm đo sáu khía cạnh: tính đúng đắn so với SPMF, thời gian chạy theo minsup, số lượng frequent itemset theo minsup, bộ nhớ cấp phát, khả năng mở rộng theo số giao dịch, và ảnh hưởng của độ dài giao dịch trung bình. Kết quả được lưu trong các file CSV ở \texttt{experiments/results/}; hình minh hoạ được sinh vào \texttt{experiments/figures/}.
 
-Các thuật toán được so sánh gồm:
+SPMF là viết tắt của \textit{Sequential Pattern Mining Framework}: một thư viện Java mã nguồn mở chứa nhiều thuật toán khai thác mẫu, trong đó có các thuật toán FIM \cite{FournierViger2014SPMF}. Trong báo cáo này, SPMF chỉ đóng vai trò thư viện tham chiếu để đối chiếu output và đo mốc hiệu năng; nó không phải thuật toán nhóm lựa chọn.
+
+Các cấu hình được so sánh trong phần benchmark engine gồm:
 
 \begin{itemize}
-    \item \texttt{base}: bản FP-Growth cơ bản của nhóm.
-    \item \texttt{opt}: bản FP-Growth tối ưu của nhóm.
-    \item \texttt{spmf}: cài đặt FP-Growth trong thư viện SPMF \cite{FournierViger2014SPMF}, dùng làm tham chiếu.
+    \item \texttt{base}: bản FP-Growth cơ bản của nhóm, tức tầng nền để dựng FP-tree.
+    \item \texttt{opt}: bản FP-Growth tối ưu của nhóm, dùng đánh giá hiệu năng của tầng engine.
+    \item \texttt{spmf}: cài đặt FP-Growth trong thư viện SPMF, dùng làm tham chiếu frequent-itemset output.
 \end{itemize}
 
 Bản cơ bản có chiến lược enumerate tổ hợp trong conditional base nên không chạy ở các cấu hình có nguy cơ bùng nổ bộ nhớ, đặc biệt trên dữ liệu dày hoặc minsup thấp. Các cấu hình này được đánh dấu \texttt{skip} trong CSV thay vì ép chạy đến khi tiến trình bị lỗi. Với Julia, thời gian được đo sau một lần warm-up để giảm ảnh hưởng của JIT; lượng cấp phát dùng cột \texttt{alloc\_bytes} từ \texttt{@timed}, còn peak memory thật được đo riêng bằng \texttt{Sys.maxrss} trong tiến trình độc lập (xem Mục Bộ nhớ). Với SPMF, thời gian và bộ nhớ lấy từ log của chương trình Java.
@@ -38,7 +40,9 @@ Bảng \ref{tab:benchmark-datasets} tóm tắt các tập dữ liệu dùng tron
 
 \subsection{Tính đúng đắn}
 
-Kết quả trong \texttt{correctness.csv} cho thấy mọi cấu hình được kiểm tra đều khớp hoàn toàn với SPMF: \texttt{match\_ratio = 1.0} và \texttt{support\_mismatch = 0}. Bảng \ref{tab:correctness-summary} liệt kê một số điểm đại diện.
+Với thuật toán chính FP-Max, test trên CSDL toy ở Mục \ref{sec:example} trả đúng hai maximal frequent itemsets: $\{1,3\}:3$ và $\{2,3,5\}:3$. Hai kết quả này cũng khớp với cách liệt kê brute force trong \texttt{simple\_get\_maximal\_itemsets}. Điều này kiểm tra trực tiếp logic MFI list: bỏ qua các tập con và giữ lại các tập không còn siêu tập phổ biến.
+
+Với tầng FP-tree/FP-Growth engine, kết quả trong \texttt{correctness.csv} cho thấy mọi cấu hình được kiểm tra đều khớp hoàn toàn với SPMF: \texttt{match\_ratio = 1.0} và \texttt{support\_mismatch = 0}. Bảng \ref{tab:correctness-summary} liệt kê một số điểm đại diện.
 
 \begin{table}[H]
     \centering
@@ -57,11 +61,11 @@ Kết quả trong \texttt{correctness.csv} cho thấy mọi cấu hình được
     \end{tabular}
 \end{table}
 
-Kết quả này xác nhận hai điểm. Thứ nhất, parser, cách tính minsup tuyệt đối và support của nhóm tương thích với SPMF trên dữ liệu benchmark. Thứ hai, các tối ưu trong \texttt{FPGrowthOpt} không làm thay đổi output so với bản cơ bản.
+Kết quả này xác nhận hai điểm. Thứ nhất, parser, cách tính minsup tuyệt đối và support của tầng engine tương thích với SPMF trên dữ liệu benchmark. Thứ hai, các tối ưu trong \texttt{FPGrowthOpt} không làm thay đổi output so với bản cơ bản. Đây là điều kiện quan trọng trước khi dùng cùng cấu trúc FP-tree/conditional tree cho FP-Max.
 
 \subsection{Thời gian chạy theo minsup}
 
-Hình \ref{fig:time-chess} đến Hình \ref{fig:time-t10} cho thấy thời gian chạy khi minsup giảm. Xu hướng chung là minsup càng thấp thì số lượng frequent itemset càng tăng và thời gian chạy tăng theo. Điều này phù hợp với phân tích lý thuyết: khi ngưỡng thấp, nhiều item sống sót qua bước tỉa hơn, conditional tree rộng hơn và output lớn hơn.
+Hình \ref{fig:time-chess} đến Hình \ref{fig:time-t10} cho thấy thời gian chạy của tầng FP-Growth engine khi minsup giảm. Xu hướng chung là minsup càng thấp thì số lượng frequent itemset càng tăng và thời gian chạy tăng theo. Điều này cũng giải thích chi phí nền của FP-Max: khi ngưỡng thấp, nhiều item sống sót qua bước tỉa hơn, conditional tree rộng hơn và không gian nhánh mà FP-Max phải xét cũng lớn hơn.
 
 \begin{figure}[H]
     \centering
@@ -207,6 +211,6 @@ Kết quả này phù hợp với lý thuyết: giao dịch dài làm tăng xác
 
 \subsection{Nhận xét và hướng tối ưu tiếp theo}
 
-Thực nghiệm cho thấy bản tối ưu của nhóm đúng so với SPMF và cải thiện rõ so với bản cơ bản ở các vùng có output lớn. Lợi ích nổi bật nhất xuất hiện trên dữ liệu dày như Chess và Mushrooms, nơi cấu trúc FP-tree và single-path shortcut phát huy tác dụng. Trên dữ liệu thưa như Retail và T10I4D100K, cải thiện vẫn có nhưng nhỏ hơn vì các tiền tố chung ít hơn.
+Thực nghiệm cho thấy tầng FP-tree/FP-Growth engine của nhóm đúng so với SPMF và cải thiện rõ so với bản cơ bản ở các vùng có output lớn. Lợi ích nổi bật nhất xuất hiện trên dữ liệu dày như Chess và Mushrooms, nơi cấu trúc FP-tree và single-path shortcut phát huy tác dụng. Với FP-Max, các kết quả này có ý nghĩa như kiểm tra nền: engine càng đúng và càng ít cấp phát thì phần khai thác maximal itemsets phía trên càng ổn định.
 
-Điểm yếu chính là bản tối ưu vẫn chậm hơn SPMF trên phần lớn cấu hình lớn. Hai hướng tối ưu cụ thể có thể làm tiếp là: thứ nhất, giảm cấp phát khi dựng conditional tree bằng cách tái sử dụng buffer/vector và tránh tạo nhiều \texttt{Vector} tạm; thứ hai, thay header dạng \texttt{Dict} bằng cấu trúc vector theo mã item liên tục để giảm overhead hash lookup. Ngoài ra, có thể nghiên cứu biểu diễn transaction bằng bitset cho bước tính support hoặc song song hoá các nhánh conditional tree độc lập.
+Điểm yếu chính là tầng engine tối ưu vẫn chậm hơn SPMF trên phần lớn cấu hình lớn. Hai hướng tối ưu cụ thể có thể làm tiếp là: thứ nhất, giảm cấp phát khi dựng conditional tree bằng cách tái sử dụng buffer/vector và tránh tạo nhiều \texttt{Vector} tạm; thứ hai, thay header dạng \texttt{Dict} bằng cấu trúc vector theo mã item liên tục để giảm overhead hash lookup. Riêng với FP-Max, hướng tối ưu tiếp theo là tối ưu kiểm tra tập con trong MFI list, ví dụ lưu MFI dưới dạng bitset để kiểm tra $\subseteq$ nhanh hơn và song song hoá các nhánh conditional tree độc lập.

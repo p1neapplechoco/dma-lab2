@@ -7,7 +7,7 @@ Xét cơ sở dữ liệu $D$ gồm 5 giao dịch trong Bảng \ref{tab:toy-db}.
 
 \begin{table}[H]
     \centering
-    \caption{CSDL toy dùng để minh hoạ FP-Growth.}
+    \caption{CSDL toy dùng để minh hoạ cách FP-Max dùng FP-tree.}
     \label{tab:toy-db}
     \begin{tabular}{c c}
         \toprule
@@ -41,7 +41,7 @@ Bước đầu tiên là đếm support của từng item. Kết quả là $\ope
     \end{tabular}
 \end{table}
 
-Chèn tuần tự các giao dịch trong Bảng \ref{tab:toy-ordered} tạo ra FP-tree đã minh hoạ ở Hình \ref{fig:fptree-toy}. Từ cây này, thuật toán khai thác từng item thông qua conditional pattern base; kết quả từng bước được trình bày trong Bảng \ref{tab:toy-conditional}:
+Chèn tuần tự các giao dịch trong Bảng \ref{tab:toy-ordered} tạo ra FP-tree đã minh hoạ ở Hình \ref{fig:fptree-toy}. Đây là prerequisite của FP-Max: trước khi biết itemset nào tối đại, thuật toán cần FP-tree và conditional pattern base để biết các tập nào còn có thể mở rộng. Bảng \ref{tab:toy-conditional} trình bày các frequent itemsets trung gian sinh từ tầng FP-Growth nền:
 
 \begin{table}[H]
     \centering
@@ -68,13 +68,13 @@ Tập kết quả cuối cùng gồm:
 \end{aligned}
 \]
 
-Để kiểm tra chéo thủ công, ta liệt kê các itemset từ các item phổ biến $\{1,2,3,5\}$. Các cặp có support đạt ngưỡng là $\{1,3\}$, $\{2,3\}$, $\{2,5\}$ và $\{3,5\}$. Trong các bộ ba, chỉ $\{2,3,5\}$ xuất hiện trong $T_2,T_3,T_5$ nên đạt support 3. Không có bộ bốn nào đạt ngưỡng vì $\{1,2,3,5\}$ chỉ xuất hiện trong hai giao dịch. Kết quả này trùng với kết quả từ FP-Growth.
+Để kiểm tra chéo thủ công, ta liệt kê các itemset từ các item phổ biến $\{1,2,3,5\}$. Các cặp có support đạt ngưỡng là $\{1,3\}$, $\{2,3\}$, $\{2,5\}$ và $\{3,5\}$. Trong các bộ ba, chỉ $\{2,3,5\}$ xuất hiện trong $T_2,T_3,T_5$ nên đạt support 3. Không có bộ bốn nào đạt ngưỡng vì $\{1,2,3,5\}$ chỉ xuất hiện trong hai giao dịch. Đây là kết quả trung gian của tầng FP-Growth nền.
 
-Nếu xét tập phổ biến tối đại, hai itemset tối đại là $\{1,3\}:3$ và $\{2,3,5\}:3$. Các itemset còn lại đều là tập con của ít nhất một trong hai itemset này.
+Đầu ra chính của FP-Max là tập phổ biến tối đại. Trong ví dụ này, hai itemset tối đại là $\{1,3\}:3$ và $\{2,3,5\}:3$. Các itemset còn lại đều là tập con của ít nhất một trong hai itemset này nên không được FP-Max đưa vào kết quả cuối.
 
 \subsection{Ví dụ 2: Trường hợp single-path}
 
-Trường hợp đặc biệt quan trọng của FP-Growth là FP-tree chỉ có một đường đi. Khi đó thuật toán không cần dựng tiếp conditional tree; mọi frequent itemset có thể sinh trực tiếp từ các tổ hợp con trên đường đi.
+Trường hợp đặc biệt quan trọng của FP-Max là FP-tree hoặc conditional FP-tree chỉ có một đường đi. Khi đó thuật toán không cần dựng tiếp conditional tree; candidate tối đại của nhánh chính là head hiện tại hợp với toàn bộ item trên đường đi.
 
 Xét CSDL trong Bảng \ref{tab:single-path-db} với $\theta = 0.6$, minsup tuyệt đối bằng 3.
 
@@ -100,7 +100,7 @@ Support của các item là $\operatorname{sup}(A)=5$, $\operatorname{sup}(B)=5$
     root \rightarrow A:5 \rightarrow B:5 \rightarrow C:4.
 \]
 
-Với single-path, mọi tập con không rỗng của $\{A,B,C\}$ đều phổ biến. Support của một itemset bằng count nhỏ nhất trên các node thuộc itemset đó:
+Với single-path, mọi tập con không rỗng của $\{A,B,C\}$ đều phổ biến. Nếu cần toàn bộ frequent itemsets, support của mỗi itemset bằng count nhỏ nhất trên các node thuộc itemset đó:
 \[
 \begin{aligned}
 &\{A\}:5,\ \{B\}:5,\ \{C\}:4,\\
@@ -109,4 +109,4 @@ Với single-path, mọi tập con không rỗng của $\{A,B,C\}$ đều phổ 
 \end{aligned}
 \]
 
-Trường hợp này đặc biệt vì conditional tree càng sâu thường càng nhỏ và dễ trở thành single-path. Tối ưu single-path giúp FP-Growth chuyển một nhánh đệ quy thành bài toán sinh tổ hợp trực tiếp trên một đường đi ngắn, giảm đáng kể chi phí khi dữ liệu có cấu trúc tiền tố lồng nhau.
+Tuy nhiên với FP-Max, ta không cần xuất toàn bộ bảy tập trên. Vì $\{A,B,C\}:4$ là siêu tập phổ biến của mọi tập còn lại, maximal frequent itemset duy nhất là $\{A,B,C\}:4$. Đây là lý do single-path đặc biệt hữu ích cho FP-Max: thuật toán có thể thêm thẳng head hợp với đường đi vào MFI list, thay vì sinh mọi tập con rồi lọc lại.
