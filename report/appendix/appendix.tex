@@ -63,7 +63,7 @@ Lệnh trên tái tạo đúng kết quả phần ứng dụng: $333$ frequent i
 julia --project=. test/runtests.jl
 \end{lstlisting}
 
-Bộ kiểm thử gồm: kiểm tra parser ba định dạng; FP-Growth và FP-Max trên CSDL toy ở Chương \ref{sec:example}; đối chiếu bản tối ưu với bản cơ bản trên năm CSDL (hai toy và ba benchmark: chess, mushrooms, retail); kiểm tra sinh luật kết hợp; và benchmark đối chiếu base/opt trên chess. Lưu ý thuật ngữ: \texttt{base}/\texttt{opt} trong dòng \texttt{[bench]} của bộ test là \emph{FP-Growth cơ bản so với FP-Growth tối ưu} (engine FP-Growth), khác nghĩa với \texttt{base} (baseline naive-maximal) và \texttt{opt} (FP-Max trực tiếp) dùng trong thực nghiệm Chương \ref{sec:evaluation}. Các tỉ lệ tốc độ/bộ nhớ in trong dòng \texttt{[bench]} là số đo on-the-fly, phụ thuộc máy và lần chạy (JIT warm-up, GC) nên có thể dao động, không nhất thiết trùng với số liệu cố định trong báo cáo.
+Bộ kiểm thử gồm: kiểm tra parser ba định dạng; FP-Growth và FP-Max trên CSDL toy ở Chương \ref{sec:example}; đối chiếu bản tối ưu với bản cơ bản trên năm CSDL (hai toy và ba benchmark: chess, mushrooms, retail); kiểm tra sinh luật kết hợp; và benchmark đối chiếu base/opt trên chess. Lưu ý thuật ngữ: \texttt{base}/\texttt{opt} trong dòng \texttt{[bench]} của bộ test là \emph{FP-Growth cơ bản so với FP-Growth tối ưu}, khác nghĩa với \texttt{base} (baseline naive-maximal) và \texttt{opt} (FP-Max trực tiếp) dùng trong thực nghiệm Chương \ref{sec:evaluation}. Các tỉ lệ tốc độ/bộ nhớ in trong dòng \texttt{[bench]} là số đo on-the-fly, phụ thuộc máy và lần chạy (JIT warm-up, GC) nên có thể dao động, không nhất thiết trùng với số liệu cố định trong báo cáo.
 
 \subsection{Tái lập thực nghiệm Chương 4}
 
