@@ -1,7 +1,7 @@
 \section{Phụ lục: Hướng dẫn tái lập}
 \label{sec:appendix-repro}
 
-Phụ lục này tóm tắt các bước tái lập toàn bộ mã nguồn, kiểm thử và thực nghiệm của đồ án. Nội dung tương ứng với tệp \texttt{README.md} trong kho mã nguồn; mọi lệnh đều chạy từ thư mục gốc của repo.
+Phụ lục này tóm tắt các bước tái lập toàn bộ mã nguồn, kiểm thử và thực nghiệm của đồ án. Nội dung tương ứng với tệp \texttt{README.md} trong kho mã nguồn; mọi lệnh đều chạy từ thư mục gốc của repo. Mã nguồn đầy đủ tại \href{https://github.com/p1neapplechoco/dma-lab2.git}{\texttt{github.com/p1neapplechoco/dma-lab2}}.
 
 \subsection{Cấu trúc thư mục}
 
@@ -23,8 +23,8 @@ Yêu cầu Julia $\geq 1.9$ (đã kiểm thử trên Julia 1.12). Cách khuyến
 
 \begin{lstlisting}[language=bash, caption={Cài Julia bằng juliaup (Linux/macOS) và ghim phiên bản.}]
 curl -fsSL https://install.julialang.org | sh
-juliaup add 1.12      # tùy chọn: ghim đúng phiên bản đã kiểm thử
-julia --version       # kỳ vọng: julia version 1.12.x (hoặc >= 1.9)
+juliaup add 1.12      # optional: pin the tested version
+julia --version       # expected: julia version 1.12.x (or >= 1.9)
 \end{lstlisting}
 
 Trên Windows có thể cài từ Microsoft Store (tìm ``Julia'') hoặc chạy \texttt{winget install julia -s msstore}. Sau khi có Julia, cài phụ thuộc theo \texttt{Manifest.toml} đã khoá để đảm bảo tái lập:
