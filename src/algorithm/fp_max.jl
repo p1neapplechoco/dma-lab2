@@ -216,3 +216,20 @@ function get_maximal_itemsets(model::FPMax)::Dict{Tuple{Vararg{String}}, Int}
 
     return maximal_itemsets
 end
+
+# Lọc maximal từ tập frequent đầy đủ: bỏ itemset nào có superset nghiêm ngặt cũng frequent.
+# Dùng làm baseline "naive maximal" để đối chiếu với FPMax có tỉa.
+function maximal_from_frequent(frequent::Dict{Tuple{Vararg{String}}, Int})::Dict{Tuple{Vararg{String}}, Int}
+    itemsets = collect(keys(frequent))
+    sets = Dict(it => Set(it) for it in itemsets)
+    maximal = Dict{Tuple{Vararg{String}}, Int}()
+    for it in itemsets
+        s = sets[it]
+        has_superset = any(
+            other != it && length(sets[other]) > length(s) && issubset(s, sets[other])
+            for other in itemsets
+        )
+        has_superset || (maximal[it] = frequent[it])
+    end
+    return maximal
+end

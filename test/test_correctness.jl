@@ -79,3 +79,12 @@ end
     @test isapprox(rules[idx].confidence, 1.0; atol = 1e-9)
     @test isapprox(rules[idx].lift, 1.25; atol = 1e-9)
 end
+
+@testset "maximal_from_frequent" begin
+    transactions = collect(values(load_transactions("data/toy/test_1.txt")))
+    g = FPGrowthOpt(0.6); fit!(g, transactions)
+    @test maximal_from_frequent(get_frequent_itemsets(g)) == Dict(
+        ("1", "3") => 3,
+        ("2", "3", "5") => 3,
+    )
+end
