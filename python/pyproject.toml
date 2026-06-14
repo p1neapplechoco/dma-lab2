@@ -1,0 +1,9 @@
+[project]
+name = "fim-prototype"
+version = "0.1.0"
+description = "Bản prototype Python ban đầu cho FP-Growth/FP-Max (đồ án FIM, bản chính thức bằng Julia ở gốc repo)"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+]
