@@ -17,8 +17,8 @@ end
 
 col(h, r, name) = r[findfirst(==(name), h)]
 
-# Đếm số frequent itemset của bản opt (count độc lập với thứ tự giao dịch).
-count_opt(transactions, s) = (m = FPGrowthOpt(s); fit!(m, transactions); length(get_frequent_itemsets(m)))
+# Đếm số tập tối đại của bản FP-Max (count độc lập với thứ tự giao dịch).
+count_opt(transactions, s) = (m = FPMax(s); fit!(m, transactions); length(get_maximal_itemsets(m)))
 
 mutable struct Tally
     pass::Int
@@ -49,12 +49,12 @@ function verify_all()
     t = Tally()
 
     # ---- Chương 4: timing.csv (đếm itemset của bản opt theo từng minsup) ----
-    println("== Chương 4 — số frequent itemset theo minsup (timing.csv) ==")
+    println("== Chương 4 — số tập tối đại theo minsup (timing.csv) ==")
     h, rows = read_csv(joinpath(RESULTS, "timing.csv"))
     for r in rows
         col(h, r, "algo") == "opt" && col(h, r, "status") == "ok" || continue
         ds = col(h, r, "dataset"); s = parse(Float64, col(h, r, "minsup"))
-        expect = parse(Int, col(h, r, "n_itemsets"))
+        expect = parse(Int, col(h, r, "n_maximal"))
         path = joinpath(BENCH, "$(ds).txt")
         isfile(path) || (@printf("  [SKIP] %s minsup=%s — thiếu %s\n", ds, col(h,r,"minsup"), path); continue)
         txs = collect(values(load_transactions(path)))
@@ -68,7 +68,7 @@ function verify_all()
         col(h, r, "algo") == "opt" || continue
         ds = col(h, r, "dataset"); frac = parse(Float64, col(h, r, "fraction"))
         s = ds == "accidents" ? 0.7 : 0.01      # minsup dùng trong exp_scalability
-        expect = parse(Int, col(h, r, "n_itemsets"))
+        expect = parse(Int, col(h, r, "n_maximal"))
         path = joinpath(BENCH, "$(ds).txt")
         isfile(path) || (@printf("  [SKIP] %s frac=%s — thiếu %s\n", ds, col(h,r,"fraction"), path); continue)
         sub = subset_prefix(path, frac)
@@ -81,7 +81,7 @@ function verify_all()
     h, rows = read_csv(joinpath(RESULTS, "txnlen.csv"))
     for r in rows
         avg = parse(Int, col(h, r, "avg_len"))
-        expect = parse(Int, col(h, r, "n_itemsets"))
+        expect = parse(Int, col(h, r, "n_maximal"))
         path = gen_synthetic(20000, 100, avg)
         txs = collect(values(load_transactions(path)))
         check!(t, "avg_len=$avg", count_opt(txs, 0.03), expect)
