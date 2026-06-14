@@ -1,4 +1,5 @@
 \section{Nền tảng lý thuyết}
+\label{sec:theory}
 
 \subsection{Bài toán Frequent Itemset Mining}
 
@@ -28,7 +29,7 @@ Trực giác của FP-Growth là nhiều giao dịch có tiền tố giống nha
 
 Một node trong FP-tree gồm bốn thành phần: item đang đại diện, biến đếm số giao dịch đi qua node, con trỏ tới node cha, và tập các node con. Root không chứa item thật. Header table ánh xạ mỗi item tới danh sách các node mang item đó trong cây.
 
-Ví dụ với cơ sở dữ liệu toy ở Chương 2 và $\theta = 0.6$, các item phổ biến là $2,3,5,1$ với support lần lượt $4,4,4,3$. Sau khi loại item không phổ biến và sắp item theo support giảm dần, FP-tree có dạng khái niệm trong Hình \ref{fig:fptree-toy}.
+Ví dụ với cơ sở dữ liệu toy ở Mục \ref{sec:example} và $\theta = 0.6$, các item phổ biến là $2,3,5,1$ với support lần lượt $4,4,4,3$. Sau khi loại item không phổ biến và sắp item theo support giảm dần, FP-tree có dạng khái niệm trong Hình \ref{fig:fptree-toy}.
 
 \begin{figure}[H]
     \centering
@@ -52,7 +53,7 @@ Ví dụ với cơ sở dữ liệu toy ở Chương 2 và $\theta = 0.6$, các 
             child { node {$5:1$} }
         };
     \end{tikzpicture}
-    \caption{FP-tree minh hoạ cho CSDL toy ở Chương 2 với minsup $=0.6$.}
+    \caption{FP-tree minh hoạ cho CSDL toy ở Mục \ref{sec:example} với minsup $=0.6$.}
     \label{fig:fptree-toy}
 \end{figure}
 
@@ -94,11 +95,13 @@ Cây trên nén năm giao dịch thành sáu node item. Hai giao dịch $[2,3,5,
 
 \subsection{Phân tích độ phức tạp}
 
-Trong bước xây dựng cây, thuật toán cần một lần quét để đếm support và một lần quét để chèn các giao dịch đã tỉa vào cây. Nếu $L$ là tổng số item sau tỉa trên toàn bộ giao dịch, chi phí xây dựng xấp xỉ $O(L \log \bar{\ell})$ nếu phải sắp từng giao dịch, với $\bar{\ell}$ là độ dài giao dịch trung bình sau tỉa. Khi dùng thứ tự mã hoá cố định theo support, chi phí sắp có thể giảm vì chỉ cần so thứ tự số nguyên.
+Trong bước xây dựng cây, thuật toán cần một lần quét cơ sở dữ liệu để đếm support và một lần quét để chèn các giao dịch đã được tỉa vào FP-tree. Nếu $L$ là tổng số item còn lại trên toàn bộ giao dịch sau khi loại bỏ các item không phổ biến, chi phí xây dựng cây xấp xỉ $O(L \log \bar{\ell})$ khi mỗi giao dịch phải được sắp xếp lại, với $\bar{\ell}$ là độ dài giao dịch trung bình sau tỉa. Khi sử dụng một thứ tự cố định theo support toàn cục, chi phí này có thể giảm do chỉ cần so sánh các mã số nguyên.
 
-Chi phí khai thác phụ thuộc mạnh vào số lượng mẫu phổ biến và cấu trúc conditional tree. Trường hợp tốt xảy ra khi minsup cao hoặc dữ liệu ít giao nhau, số conditional pattern base nhỏ và cây nhanh rỗng. Trường hợp thuận lợi khác là single-path, vì mọi mẫu có thể sinh trực tiếp từ một đường đi. Trường hợp xấu nhất vẫn có thể tăng theo hàm mũ theo số item phổ biến, do số frequent itemset có thể là $2^m - 1$ khi mọi tổ hợp đều phổ biến. Vì vậy FP-Growth giảm chi phí trung gian so với Apriori, nhưng không thể vượt qua giới hạn do kích thước output.
+Chi phí khai thác phụ thuộc chủ yếu vào số lượng frequent itemset và cấu trúc của các conditional FP-tree. Trường hợp thuận lợi xảy ra khi \textit{minsup} cao hoặc dữ liệu có mức độ giao nhau thấp, khiến các conditional pattern base nhỏ và nhiều nhánh đệ quy nhanh chóng kết thúc. Một trường hợp đặc biệt thuận lợi là khi FP-tree chỉ gồm một đường đi (\textit{single-path}), vì toàn bộ frequent itemset có thể được sinh trực tiếp từ đường đi này mà không cần xây thêm conditional tree.
 
-Không gian lưu trữ gồm FP-tree, header table, conditional trees trong đệ quy và bảng kết quả. FP-tree có số node tối đa bằng tổng số item sau tỉa trên toàn bộ giao dịch, nhưng thường nhỏ hơn nhiều nhờ nén tiền tố. Các yếu tố ảnh hưởng lớn nhất tới hiệu năng gồm: số giao dịch, số item phân biệt, độ dài giao dịch trung bình, độ dày của dữ liệu, minsup, và số lượng frequent itemset đầu ra.
+Trong trường hợp xấu nhất, độ phức tạp vẫn tăng theo hàm mũ theo số item phổ biến. Nếu có $m$ item phổ biến và mọi tập con của chúng đều thỏa ngưỡng support, số frequent itemset đạt cực đại là $2^m-1$, dẫn đến chi phí khai thác cùng bậc. Trong thực tế, hiệu năng của FP-Growth thường gần với kích thước đầu ra hơn là cận lý thuyết này. Nếu ký hiệu $F$ là số frequent itemset được sinh ra, thời gian khai thác có thể xem như tỷ lệ với $F$ nhân với chi phí trung bình để xây dựng và duyệt các conditional FP-tree, cộng thêm chi phí xây dựng cây ban đầu $O(L \log \bar{\ell})$. Do số lượng frequent itemset trong các tập dữ liệu thực tế thường nhỏ hơn rất nhiều so với cận $2^m-1$, thời gian chạy trung bình thường tăng gần tuyến tính theo kích thước đầu ra. Vì vậy, FP-Growth tránh được chi phí sinh tập ứng viên trung gian của Apriori, nhưng vẫn chịu ràng buộc bởi số lượng mẫu phổ biến cần xuất ra.
+
+Không gian lưu trữ gồm FP-tree, header table, các conditional FP-tree được tạo trong quá trình đệ quy và tập kết quả đầu ra. Số node của FP-tree bị chặn trên bởi tổng số item sau tỉa trên toàn bộ giao dịch, nhưng trong thực tế thường nhỏ hơn đáng kể nhờ khả năng nén các tiền tố chung. Các yếu tố ảnh hưởng lớn nhất tới hiệu năng của FP-Growth gồm số lượng giao dịch, số item phân biệt, độ dài giao dịch trung bình, mật độ dữ liệu, giá trị \textit{minsup} và số lượng frequent itemset đầu ra.
 
 \subsection{Thuật toán FP-Max}
 

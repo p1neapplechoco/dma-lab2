@@ -66,7 +66,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 Giao diện dòng lệnh nhận đường dẫn dữ liệu, ngưỡng minsup tương đối, thuật toán và đường dẫn output (tuỳ chọn):
 
 ```bash
-julia --project=. main.jl <input_path> <minsup> [fp-growth|fp-growth-opt|fp-max] [output_path]
+julia --project=. main.jl <input_path> <minsup> [fp-growth|fp-growth-opt|fp-max|rules] [output_path]
 ```
 
 Ví dụ khai thác tập phổ biến trên CSDL toy với minsup `0.6`:
@@ -80,6 +80,14 @@ julia --project=. main.jl data/toy/test_1.txt 0.6 fp-growth-opt output.txt
 ```
 item1 item2 ... #SUP: support_count
 ```
+
+Chế độ `rules` sinh trực tiếp luật kết hợp (lift > 1, sắp theo lift) từ tập phổ biến. Ngưỡng confidence đặt qua `MINCONF` (mặc định `0.2`), số luật in ra qua `TOPK` (mặc định `10`). Với dữ liệu item có khoảng trắng trong tên (ví dụ Groceries), đặt `SEP=comma` để chỉ tách theo dấu phẩy:
+
+```bash
+SEP=comma julia --project=. main.jl data/groceries.txt 0.01 rules rules.csv
+```
+
+Lệnh trên tái tạo kết quả phần ứng dụng: 333 frequent itemsets và 231 luật.
 
 ## Kiểm thử
 
@@ -99,6 +107,10 @@ Association rules                     |    3      3
 FP-Growth opt benchmark (base vs opt) |    1      1
 [bench] chess minsup=0.9 — opt nhanh hơn base x4.06, mem x2.09
 ```
+
+> Lưu ý: các tỉ lệ tốc độ/bộ nhớ trong dòng [bench] là số đo on-the-fly của
+> test, phụ thuộc máy và lần chạy (JIT warm-up, GC) nên có thể dao động và
+> không trùng với số liệu cố định ở Bảng 7 của báo cáo.
 
 ## Tái lập thực nghiệm Chương 4
 
