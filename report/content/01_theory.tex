@@ -19,9 +19,9 @@ Tính chất quan trọng nhất của FIM là tính phản đơn điệu của 
 \]
 Hệ quả là nếu $X$ không phổ biến thì mọi siêu tập của $X$ cũng không phổ biến. Ngược lại, nếu $Y$ phổ biến thì mọi tập con của $Y$ cũng phổ biến. Tính chất này cho phép các thuật toán FIM tỉa không gian tìm kiếm rất mạnh, và cũng là cơ sở để FP-Max tỉa theo siêu tập như trình bày bên dưới.
 
-\subsection{Bộ máy nền: FP-Growth và FP-tree}
+\subsection{FP-Growth và FP-tree}
 
-FP-Max không khai thác trực tiếp từ cơ sở dữ liệu mà tái sử dụng cấu trúc FP-tree cùng cơ chế cơ sở mẫu điều kiện của FP-Growth. Vì vậy phần này tóm tắt bộ máy nền đó trước khi đi vào FP-Max.
+FP-Max không khai thác trực tiếp từ cơ sở dữ liệu mà tái sử dụng cấu trúc FP-tree cùng cơ chế cơ sở mẫu điều kiện của FP-Growth. Vì vậy phần này tóm tắt cơ chế đó trước khi đi vào FP-Max.
 
 Apriori khai thác tính chất phản đơn điệu bằng cách sinh ứng viên theo từng mức độ dài \cite{Agrawal1994FastAlgorithms}. Cách làm này dễ hiểu nhưng phải quét cơ sở dữ liệu nhiều lần và có thể sinh rất nhiều ứng viên trung gian. FP-Growth thay đổi hướng tiếp cận: thuật toán chỉ quét dữ liệu hai lần để xây dựng một cây nén gọi là FP-tree, sau đó khai thác mẫu bằng các cơ sở mẫu điều kiện mà không cần sinh ứng viên toàn cục \cite{Han2000FPGrowth}.
 

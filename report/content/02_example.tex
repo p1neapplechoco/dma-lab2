@@ -118,4 +118,53 @@ Vì node $b$ có hai con, cây không phải single-path nên thuật toán đi 
 
 Hai item hiếm $c$ và $d$ được xử lý trước, mỗi item có conditional pattern base $(a,b):3$ nên sinh hai tối đại $\{a,b,c\}$ và $\{a,b,d\}$. Khi đến item $b$, conditional pattern base là $(a):6$ cho tail $\{a\}$; vì $head \cup tail = \{a,b\}$ đã là tập con của MFI $\{a,b,c\}$, thuật toán cắt cả nhánh và \emph{không} dựng conditional FP-tree cho $b$ --- đây chính là chỗ tỉa tiết kiệm công sức. Item $a$ tương tự bị tỉa với $head\cup tail=\{a\}$. Tập kết quả là $\{a,b,c\}:3$ và $\{a,b,d\}:3$.
 
-Trường hợp này làm rõ điểm khác biệt cốt lõi giữa FP-Max và FP-Growth. FP-Growth buộc phải xuất ra mọi tập phổ biến --- ở đây gồm $\{a\},\{b\},\{a,b\},\{a,c\},\{b,c\},\{a,b,c\},\dots$ với tổng cộng mười tập --- trong khi FP-Max chỉ giữ hai tối đại và bỏ qua phần lớn không gian nhờ phép tỉa. Cực điểm của hiệu ứng này là khi FP-tree co thành một đường đi dài $k$: FP-Growth sinh $2^k-1$ tập phổ biến, còn FP-Max nhận diện single-path và trả về đúng một tối đại. Đây là lý do FP-Max đặc biệt hiệu quả trên dữ liệu dày, nơi số tập phổ biến lớn theo cấp số mũ nhưng số tập tối đại nhỏ hơn nhiều.
+Trường hợp này làm rõ điểm khác biệt cốt lõi giữa FP-Max và FP-Growth. FP-Growth buộc phải xuất ra mọi tập phổ biến --- ở đây gồm $\{a\},\{b\},\{a,b\},\{a,c\},\{b,c\},\{a,b,c\},\dots$ với tổng cộng mười tập --- trong khi FP-Max chỉ giữ hai tối đại và bỏ qua phần lớn không gian nhờ phép tỉa. Cực điểm của hiệu ứng này là khi FP-tree co thành một đường đi dài $k$: FP-Growth sinh $2^k-1$ tập phổ biến, còn FP-Max nhận diện single-path và trả về đúng một tối đại; Ví dụ 3 minh hoạ cụ thể trường hợp đó. Đây là lý do FP-Max đặc biệt hiệu quả trên dữ liệu dày, nơi số tập phổ biến lớn theo cấp số mũ nhưng số tập tối đại nhỏ hơn nhiều.
+
+\subsection{Ví dụ 3: FP-tree single-path}
+\label{sec:example-singlepath}
+
+Trường hợp đặc biệt thứ hai, và cũng là nguồn gốc của phần lớn hiệu năng FP-Max, là khi \emph{toàn bộ} FP-tree (hoặc một conditional FP-tree) co lại thành một đường đi duy nhất. Khi đó mọi item trên đường đều cùng xuất hiện trong các giao dịch sinh ra đường đó, nên hợp của chúng đã là một tập phổ biến; FP-Max nhận diện cấu trúc single-path và trả thẳng \emph{một} tối đại duy nhất mà không cần đệ quy qua từng head. Ví dụ này được thiết kế để chính cây gốc là single-path.
+
+Xét CSDL trong Bảng \ref{tab:single-db} với $\theta = 0.5$, minsup tuyệt đối bằng 2.
+
+\begin{table}[H]
+    \centering
+    \caption{CSDL thiết kế để FP-tree gốc co thành một đường đi duy nhất.}
+    \label{tab:single-db}
+    \begin{tabular}{c c}
+        \toprule
+        Giao dịch & Item \\
+        \midrule
+        $T_1$ & $\{a,b,c\}$ \\
+        $T_2$ & $\{a,b,c\}$ \\
+        $T_3$ & $\{a,b\}$ \\
+        $T_4$ & $\{a\}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Support của các item là $\operatorname{sup}(a)=4$, $\operatorname{sup}(b)=3$, $\operatorname{sup}(c)=2$; cả ba đều đạt ngưỡng. Mỗi giao dịch là tập con của giao dịch dài hơn (cấu trúc lồng nhau $\{a\}\subset\{a,b\}\subset\{a,b,c\}$), nên khi chèn theo thứ tự support giảm dần $a,b,c$, mọi giao dịch dùng chung tiền tố và FP-tree co thành một đường:
+\[
+    root \rightarrow a:4 \rightarrow b:3 \rightarrow c:2.
+\]
+
+Vì root chỉ có một con và không node nào phân nhánh, thuật toán phát hiện single-path ngay tại lời gọi gốc. Thay vì duyệt header table và đệ quy theo từng head, FP-Max gom mọi item trên đường đạt minsup thành một candidate duy nhất $\{a,b,c\}$ với support bằng count nhỏ nhất trên đường ($\operatorname{sup}(c)=2$), rồi hợp vào danh sách MFI. Tập kết quả là:
+\[
+    \{a,b,c\}:2.
+\]
+
+Đối chiếu chi phí giữa hai thuật toán làm rõ giá trị của lối tắt single-path. Trên cùng CSDL này, FP-Growth phải liệt kê toàn bộ $2^3-1=7$ tập phổ biến trong Bảng \ref{tab:single-compare}; FP-Max chỉ giữ lại đúng tập tối đại bao trùm cả bảy. Khi đường dài $k$ thay vì $3$, khoảng cách này nới rộng thành $2^k-1$ so với $1$ --- đúng hành vi cấp số mũ đã nêu ở cuối Ví dụ 2.
+
+\begin{table}[H]
+    \centering
+    \caption{So sánh đầu ra trên CSDL single-path Bảng \ref{tab:single-db}: FP-Growth liệt kê mọi tập con, FP-Max chỉ giữ tối đại.}
+    \label{tab:single-compare}
+    \begin{tabular}{l l}
+        \toprule
+        Thuật toán & Đầu ra \\
+        \midrule
+        FP-Growth & $\{a\}:4,\ \{b\}:3,\ \{c\}:2,\ \{a,b\}:3,\ \{a,c\}:2,\ \{b,c\}:2,\ \{a,b,c\}:2$ \\
+        FP-Max & $\{a,b,c\}:2$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}

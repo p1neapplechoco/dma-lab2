@@ -1,6 +1,6 @@
 # Khai thác tập phổ biến tối đại — FP-Max
 
-Đồ án cài đặt từ đầu thuật toán **FP-Max** (FPmax) cho bài toán khai thác tập phổ biến tối đại (maximal frequent itemset mining). FP-Max được xây trên cấu trúc FP-tree của FP-Growth; vì vậy repo gồm: bộ máy nền FP-Growth (bản cơ bản và bản tối ưu), một baseline maximal kiểu *naive* (khai thác toàn bộ tập phổ biến rồi lọc tối đại), và **FP-Max** khai thác trực tiếp có danh sách MFI và tỉa theo siêu tập. Cài đặt chính bằng **Julia**, đóng gói thành package `FrequentItemsetMining`. Báo cáo đầy đủ nằm ở `docs/Report.pdf`.
+Đồ án cài đặt từ đầu thuật toán **FP-Max** (FPmax) cho bài toán khai thác tập phổ biến tối đại (maximal frequent itemset mining). FP-Max được xây trên cấu trúc FP-tree của FP-Growth; vì vậy repo gồm: FP-Growth (bản cơ bản và bản tối ưu), một baseline maximal kiểu *naive* (khai thác toàn bộ tập phổ biến rồi lọc tối đại), và **FP-Max** khai thác trực tiếp có danh sách MFI và tỉa theo siêu tập. Cài đặt chính bằng **Julia**, đóng gói thành package `FrequentItemsetMining`. Báo cáo đầy đủ nằm ở `docs/Report.pdf`.
 
 Không sử dụng bất kỳ thư viện FIM có sẵn nào. SPMF (thuật toán FPMax) chỉ được gọi như một công cụ hộp đen để đối chiếu kết quả ở Chương 4.
 
@@ -75,7 +75,7 @@ Ví dụ khai thác tập phổ biến tối đại bằng FP-Max trên CSDL toy
 julia --project=. main.jl data/toy/test_1.txt 0.6 fp-max output.txt
 ```
 
-Bộ máy nền FP-Growth (khai thác toàn bộ tập phổ biến) gọi qua `fp-growth` hoặc `fp-growth-opt`.
+FP-Growth (khai thác toàn bộ tập phổ biến) gọi qua `fp-growth` hoặc `fp-growth-opt`.
 
 Đầu vào theo định dạng SPMF: mỗi giao dịch một dòng, item cách nhau bằng khoảng trắng (parser cũng chấp nhận dòng có dấu phẩy). Đầu ra theo dạng:
 
@@ -97,7 +97,7 @@ Lệnh trên tái tạo kết quả phần ứng dụng: 333 frequent itemsets v
 julia --project=. test/runtests.jl
 ```
 
-Bộ kiểm thử gồm: kiểm tra parser ba định dạng, FP-Max trên CSDL toy ở Chương 2 (hai maximal itemsets `{1,3}` và `{2,3,5}`), đối chiếu baseline naive-maximal `maximal_from_frequent` cho cùng kết quả, kiểm tra bộ máy nền FP-Growth, đối chiếu bản tối ưu với bản cơ bản trên **năm CSDL khác nhau** (hai toy và ba benchmark: chess, mushrooms, retail), kiểm tra sinh luật kết hợp, và benchmark đối chiếu base/opt trên chess. Output lần chạy gần nhất (26/26 pass):
+Bộ kiểm thử gồm: kiểm tra parser ba định dạng, FP-Max trên CSDL toy ở Chương 2 (hai maximal itemsets `{1,3}` và `{2,3,5}`), đối chiếu baseline naive-maximal `maximal_from_frequent` cho cùng kết quả, kiểm tra FP-Growth, đối chiếu bản tối ưu với bản cơ bản trên **năm CSDL khác nhau** (hai toy và ba benchmark: chess, mushrooms, retail), kiểm tra sinh luật kết hợp, và benchmark đối chiếu base/opt trên chess. Output lần chạy gần nhất (26/26 pass):
 
 ```
 Test Summary:                         | Pass  Total
