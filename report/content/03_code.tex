@@ -91,32 +91,37 @@ Body::Int64
 
 Không có biến nào bị suy ra kiểu \texttt{Any}; union duy nhất xuất hiện là trạng thái iterator chuẩn của vòng lặp \texttt{for} trong Julia, không phải bất ổn kiểu. Lệnh \texttt{@inferred FrequentItemsetMining.\_item\_support(nodes)} chạy không lỗi và suy ra \texttt{Int64}, xác nhận hàm nóng này type-stable.
 
-Lợi ích cấp phát cũng được đo trực tiếp thay vì suy luận. Bảng \ref{tab:perf-alloc} so sánh lượng bộ nhớ cấp phát của bản cơ bản và bản tối ưu trên Chess ở ba ngưỡng minsup (cột \texttt{alloc\_bytes} từ \texttt{timing.csv}). Khoảng cách tăng nhanh khi minsup giảm và output lớn hơn: từ khoảng $1.32$ lần ở minsup $0.9$ lên $11.33$ lần ở minsup $0.8$. Điều này cho thấy việc giữ kiểu cụ thể và tránh enumerate tổ hợp dư thừa có tác động đo được ở đúng vùng mà chi phí cấp phát chiếm ưu thế.
+Tính ổn định kiểu của bộ máy FP-tree này được cả hai chiến lược khai thác maximal sử dụng: baseline naive-maximal chạy thẳng trên \texttt{FPGrowthOpt}, còn FP-Max dùng lại cùng cơ chế cây và cơ sở mẫu điều kiện. Hiệu quả tổng thể của tối ưu được đo ở Mục \ref{sec:implementation-fpmax} và Mục \ref{sec:evaluation}.
+
+\subsection{Cài đặt FP-Max và baseline naive-maximal}
+\label{sec:implementation-fpmax}
+
+Nhóm cài đặt khai thác tập tối đại theo hai chiến lược để có thể đo lường tác động của phép tỉa.
+
+\paragraph{Baseline naive-maximal.} Hàm \texttt{maximal\_from\_frequent} nhận đầu ra đầy đủ của \texttt{get\_frequent\_itemsets} (chạy trên \texttt{FPGrowthOpt}) rồi loại mọi itemset có một siêu tập nghiêm ngặt cũng phổ biến. Đây là cách trực tiếp nhất để thu tập tối đại, nhưng phải vật chất hoá toàn bộ tập phổ biến trước khi lọc, nên thừa hưởng đúng điểm bùng nổ của FP-Growth trên dữ liệu dày: ở minsup thấp, số tập phổ biến lớn theo cấp số mũ làm bước mine-all không khả thi.
+
+\paragraph{FP-Max trực tiếp.} \texttt{FPMax} dựng FP-tree ban đầu qua \texttt{FPGrowth} và lưu lại toàn bộ giao dịch dưới dạng \texttt{Set\{String\}} để tính support của các maximal itemset ở bước cuối. Hàm \texttt{get\_maximal\_itemsets} duy trì danh sách MFI dưới dạng vector các set. Khi có candidate mới, \texttt{insert\_mfi!} bỏ qua candidate nếu nó là tập con của một MFI sẵn có; ngược lại, hàm xoá các MFI cũ là tập con nghiêm ngặt của candidate rồi thêm candidate mới, giữ bất biến không có hai MFI nào lồng nhau. Trong đệ quy, nếu cây là single-path thì hợp head hiện tại với toàn bộ item trên đường đi thành một candidate duy nhất. Nếu cây nhiều nhánh, thuật toán xét item trong header theo support tăng dần, dựng conditional pattern base, tìm tail còn phổ biến, và dùng phép kiểm tra $head \cup tail$ để tỉa: nếu $head\cup tail$ đã nằm trong một MFI thì cắt cả nhánh, không dựng conditional FP-tree. Nhờ đó FP-Max chạy được trong những cấu hình mà baseline naive-maximal bị bỏ qua vì bùng nổ bộ nhớ.
+
+\paragraph{Đo lường tối ưu.} Bảng \ref{tab:perf-alloc} so sánh lượng cấp phát của hai chiến lược trên Chess ở ba ngưỡng minsup mà cả hai còn chạy được (cột \texttt{alloc\_bytes} từ \texttt{timing.csv}). Lợi ích của phép tỉa lớn dần khi tỉ lệ giữa số tập phổ biến và số tập tối đại tăng: ở minsup $0.80$, baseline cấp phát $836.98$ MB còn FP-Max chỉ $34.26$ MB --- giảm khoảng $24.4$ lần; ở minsup $0.85$ tỉ lệ là $4.75$ lần; tới minsup $0.90$ hai chiến lược xấp xỉ nhau vì số tập phổ biến chưa nhiều hơn số tối đại bao nhiêu. Quan trọng hơn, tại các ngưỡng thấp hơn ($0.75$, $0.70$) baseline bị bỏ qua hoàn toàn vì mine-all vượt bộ nhớ, trong khi FP-Max vẫn hoàn tất --- đây mới là lợi ích quyết định của khai thác tối đại trực tiếp. Phân tích thời gian chi tiết, gồm cả vùng dữ liệu thưa nơi chi phí cài đặt của FP-Max lấn át lợi ích tỉa, được trình bày ở Mục \ref{sec:evaluation}.
 
 \begin{table}[H]
     \centering
-    \caption{Bộ nhớ cấp phát của bản cơ bản và bản tối ưu trên Chess, đo bằng \texttt{alloc\_bytes}.}
+    \caption{Bộ nhớ cấp phát của baseline naive-maximal và FP-Max trên Chess, đo bằng \texttt{alloc\_bytes}.}
     \label{tab:perf-alloc}
     \begin{tabular}{r r r r}
         \toprule
-        minsup & base (MB) & opt (MB) & Tỉ lệ giảm \\
+        minsup & naive-maximal (MB) & FP-Max (MB) & Tỉ lệ giảm \\
         \midrule
-        0.80 & 360.78 & 31.84 & 11.33 \\
-        0.85 & 48.29 & 18.19 & 2.65 \\
-        0.90 & 17.35 & 13.17 & 1.32 \\
+        0.80 & 836.98 & 34.26 & 24.43 \\
+        0.85 & 119.71 & 25.23 & 4.75 \\
+        0.90 & 18.64 & 20.17 & 0.92 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\subsection{Cài đặt FP-Max}
-
-\texttt{FPMax} sử dụng \texttt{FPGrowth} để dựng cây ban đầu, đồng thời lưu lại toàn bộ giao dịch dưới dạng \texttt{Set\{String\}} để tính support của maximal itemsets ở bước cuối. Hàm \texttt{get\_maximal\_itemsets} duy trì danh sách các MFI dưới dạng vector các set. Khi có candidate mới, hàm \texttt{insert\_mfi!} bỏ qua candidate nếu nó là tập con của một MFI có sẵn; ngược lại, hàm xoá các MFI cũ là tập con nghiêm ngặt của candidate rồi thêm candidate mới.
-
-Trong đệ quy FP-Max, nếu cây là single-path thì thuật toán hợp head hiện tại với toàn bộ item trên đường đi và cập nhật MFI. Nếu cây có nhiều nhánh, thuật toán xét các item trong header theo support tăng dần, tạo conditional pattern base, tìm tail còn phổ biến, rồi dùng kiểm tra $head \cup tail$ để tỉa các nhánh chắc chắn không sinh MFI mới.
-
 \subsection{Kiểm thử tự động}
 
-Bộ kiểm thử trong \texttt{test/test\_correctness.jl} gồm ba nhóm chính. Nhóm đầu kiểm tra parser với ba định dạng: \texttt{1, 2, 3}, \texttt{\{1, 2, 3\}}, và \texttt{1 2 3}. Nhóm thứ hai kiểm tra FP-Growth cơ bản trên CSDL toy ở Mục \ref{sec:example}, kỳ vọng đúng 9 frequent itemsets với support tương ứng. Nhóm thứ ba kiểm tra FP-Max trên cùng CSDL, kỳ vọng hai maximal itemsets $\{1,3\}$ và $\{2,3,5\}$.
+Bộ kiểm thử trong \texttt{test/test\_correctness.jl} gồm nhiều nhóm. Nhóm parser kiểm tra ba định dạng: \texttt{1, 2, 3}, \texttt{\{1, 2, 3\}}, và \texttt{1 2 3}. Nhóm trọng tâm kiểm tra FP-Max trên CSDL toy ở Mục \ref{sec:example}, kỳ vọng đúng hai maximal itemsets $\{1,3\}:3$ và $\{2,3,5\}:3$ --- chính kết quả của ví dụ tay. Một nhóm riêng kiểm tra baseline \texttt{maximal\_from\_frequent} cho ra cùng hai tối đại đó, xác nhận hai chiến lược (naive-maximal và FP-Max trực tiếp) đồng nhất về kết quả. Nhóm còn lại kiểm tra bộ máy nền FP-Growth cơ bản (9 frequent itemsets trên CSDL toy) để bảo đảm cây và cơ sở mẫu điều kiện mà FP-Max dựa vào là đúng.
 
 Ngoài ra, test đối chiếu \texttt{FPGrowthOpt} với \texttt{FPGrowth} trên \texttt{data/toy/test\_1.txt}, \texttt{data/toy/test\_2.txt} và \texttt{data/benchmark/chess.txt} ở nhiều giá trị minsup. Test benchmark trong \texttt{test/test\_benchmark.jl} đo thời gian và số byte cấp phát trên \texttt{chess} với minsup $0.9$, sau đó kiểm tra lại kết quả của bản tối ưu và bản cơ bản phải trùng nhau. Lệnh kiểm thử chuẩn là:
 
