@@ -7,7 +7,7 @@ Xét cơ sở dữ liệu $D$ gồm 5 giao dịch trong Bảng \ref{tab:toy-db}.
 
 \begin{table}[H]
     \centering
-    \caption{CSDL toy dùng để minh hoạ cách FP-Max dùng FP-tree.}
+    \caption{CSDL toy dùng để minh hoạ FP-Max.}
     \label{tab:toy-db}
     \begin{tabular}{c c}
         \toprule
@@ -22,11 +22,11 @@ Xét cơ sở dữ liệu $D$ gồm 5 giao dịch trong Bảng \ref{tab:toy-db}.
     \end{tabular}
 \end{table}
 
-Bước đầu tiên là đếm support của từng item. Kết quả là $\operatorname{sup}(1)=3$, $\operatorname{sup}(2)=4$, $\operatorname{sup}(3)=4$, $\operatorname{sup}(4)=1$, $\operatorname{sup}(5)=4$. Vì minsup tuyệt đối bằng 3, item $4$ bị loại. Các item còn lại được sắp theo support giảm dần, nếu bằng nhau thì theo mã item tăng dần: $2 \prec 3 \prec 5 \prec 1$.
+Bước đầu tiên là đếm support của từng item. Kết quả là $\operatorname{sup}(1)=3$, $\operatorname{sup}(2)=4$, $\operatorname{sup}(3)=4$, $\operatorname{sup}(4)=1$, $\operatorname{sup}(5)=4$. Vì minsup tuyệt đối bằng 3, item $4$ bị loại. Để dựng FP-tree, các item còn lại trong mỗi giao dịch được sắp theo support giảm dần, nếu bằng nhau thì theo mã item tăng dần: $2 \prec 3 \prec 5 \prec 1$.
 
 \begin{table}[H]
     \centering
-    \caption{Các giao dịch sau bước tỉa và sắp thứ tự.}
+    \caption{Các giao dịch sau bước tỉa và sắp thứ tự để dựng FP-tree.}
     \label{tab:toy-ordered}
     \begin{tabular}{c c c}
         \toprule
@@ -41,72 +41,81 @@ Bước đầu tiên là đếm support của từng item. Kết quả là $\ope
     \end{tabular}
 \end{table}
 
-Chèn tuần tự các giao dịch trong Bảng \ref{tab:toy-ordered} tạo ra FP-tree đã minh hoạ ở Hình \ref{fig:fptree-toy}. Đây là prerequisite của FP-Max: trước khi biết itemset nào tối đại, thuật toán cần FP-tree và conditional pattern base để biết các tập nào còn có thể mở rộng. Bảng \ref{tab:toy-conditional} trình bày các frequent itemsets trung gian sinh từ tầng FP-Growth nền:
+Chèn tuần tự các giao dịch trong Bảng \ref{tab:toy-ordered} tạo ra FP-tree đã minh hoạ ở Hình \ref{fig:fptree-toy}. Khác với FP-Growth, FP-Max duyệt header table theo thứ tự support \emph{tăng dần}, tức $1 \prec 2 \prec 3 \prec 5$ (item $1$ có support $3$, ba item còn lại có support $4$ nên xếp theo mã item). Bảng \ref{tab:toy-fpmax} ghi lại từng bước: head đang xét, conditional pattern base, tail (các item còn đủ support trong base), candidate tối đại sinh ra, và trạng thái danh sách MFI sau bước đó.
 
 \begin{table}[H]
     \centering
-    \caption{Khai thác conditional pattern base trong ví dụ cơ sở.}
-    \label{tab:toy-conditional}
-    \begin{tabular}{c c c}
+    \caption{Vòng đệ quy FP-Max trên ví dụ cơ sở. Mỗi candidate được hợp nhất vào danh sách MFI theo quy tắc loại tập con nghiêm ngặt.}
+    \label{tab:toy-fpmax}
+    \small
+    \begin{tabular}{c c c c c}
         \toprule
-        Item hậu tố & Conditional pattern base & Itemset phổ biến sinh ra \\
+        Head & Conditional pattern base & Tail & Candidate & MFI sau bước \\
         \midrule
-        $1$ & $(3):1$, $(2,3,5):2$ & $\{1\}:3$, $\{1,3\}:3$ \\
-        $5$ & $(2,3):3$, $(2):1$ & $\{5\}:4$, $\{2,5\}:4$, $\{3,5\}:3$, $\{2,3,5\}:3$ \\
-        $3$ & $\emptyset:1$, $(2):3$ & $\{3\}:4$, $\{2,3\}:3$ \\
-        $2$ & $\emptyset:4$ & $\{2\}:4$ \\
+        $1$ & $(3):1,\ (2,3,5):2$ & $\{3\}$ & $\{1,3\}$ & $\{1,3\}$ \\
+        $2$ & $\emptyset$ & $\emptyset$ & $\{2\}$ & $\{1,3\},\{2\}$ \\
+        $3$ & $(2):3$ & $\{2\}$ & $\{2,3\}$ & $\{1,3\},\{2,3\}$ \\
+        $5$ & $(2,3):3,\ (2):1$ & $\{2,3\}$ & $\{2,3,5\}$ & $\{1,3\},\{2,3,5\}$ \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-Tập kết quả cuối cùng gồm:
+Diễn giải các bước trong Bảng \ref{tab:toy-fpmax}. Khi xét head $\{1\}$, conditional pattern base gồm đường $(3)$ với count $1$ và đường $(2,3,5)$ với count $2$; chỉ item $3$ đạt support $3$ nên tail là $\{3\}$. Cây điều kiện co thành một đường, sinh candidate $\{1,3\}$ và khởi tạo MFI. Head $\{2\}$ có base rỗng (node $2$ nằm ngay dưới root) nên tạm thời cho candidate $\{2\}$. Đến head $\{3\}$, base $(2):3$ cho tail $\{2\}$ và candidate $\{2,3\}$; vì $\{2\}$ là tập con nghiêm ngặt của $\{2,3\}$ nên $\{2\}$ bị loại khỏi MFI. Cuối cùng head $\{5\}$ có base $(2,3):3$ và $(2):1$; tail $\{2,3\}$, cây điều kiện single-path cho candidate $\{2,3,5\}$, làm $\{2,3\}$ bị loại. Danh sách MFI hội tụ về hai phần tử.
+
+Sau khi tính lại support trên $D$, tập kết quả của FP-Max là:
 \[
-\begin{aligned}
-&\{1\}:3,\ \{2\}:4,\ \{3\}:4,\ \{5\}:4,\\
-&\{1,3\}:3,\ \{2,3\}:3,\ \{2,5\}:4,\ \{3,5\}:3,\\
-&\{2,3,5\}:3.
-\end{aligned}
+    \{1,3\}:3, \qquad \{2,3,5\}:3.
 \]
 
-Để kiểm tra chéo thủ công, ta liệt kê các itemset từ các item phổ biến $\{1,2,3,5\}$. Các cặp có support đạt ngưỡng là $\{1,3\}$, $\{2,3\}$, $\{2,5\}$ và $\{3,5\}$. Trong các bộ ba, chỉ $\{2,3,5\}$ xuất hiện trong $T_2,T_3,T_5$ nên đạt support 3. Không có bộ bốn nào đạt ngưỡng vì $\{1,2,3,5\}$ chỉ xuất hiện trong hai giao dịch. Đây là kết quả trung gian của tầng FP-Growth nền.
+Để kiểm tra chéo thủ công, ta liệt kê toàn bộ tập phổ biến từ các item $\{1,2,3,5\}$: các đơn item $\{1\}:3,\{2\}:4,\{3\}:4,\{5\}:4$; các cặp $\{1,3\}:3,\{2,3\}:3,\{2,5\}:4,\{3,5\}:3$; và bộ ba $\{2,3,5\}:3$ (xuất hiện trong $T_2,T_3,T_5$). Trong chín tập phổ biến này, chỉ $\{1,3\}$ và $\{2,3,5\}$ là không có siêu tập phổ biến: mọi tập còn lại đều là tập con của một trong hai. Kết quả thủ công trùng khớp với đầu ra của FP-Max, và cũng đúng với cài đặt FPMax tham chiếu trong SPMF.
 
-Đầu ra chính của FP-Max là tập phổ biến tối đại. Trong ví dụ này, hai itemset tối đại là $\{1,3\}:3$ và $\{2,3,5\}:3$. Các itemset còn lại đều là tập con của ít nhất một trong hai itemset này nên không được FP-Max đưa vào kết quả cuối.
+\subsection{Ví dụ 2: Tỉa theo siêu tập}
 
-\subsection{Ví dụ 2: Trường hợp single-path}
+Trường hợp đặc biệt quan trọng của FP-Max là phép tỉa theo siêu tập: khi $head \cup tail$ đã nằm trong một MFI có sẵn, cả nhánh đệ quy bị cắt mà không cần dựng conditional FP-tree. Ví dụ này được thiết kế để phép tỉa thực sự kích hoạt.
 
-Trường hợp đặc biệt quan trọng của FP-Max là FP-tree hoặc conditional FP-tree chỉ có một đường đi. Khi đó thuật toán không cần dựng tiếp conditional tree; candidate tối đại của nhánh chính là head hiện tại hợp với toàn bộ item trên đường đi.
-
-Xét CSDL trong Bảng \ref{tab:single-path-db} với $\theta = 0.6$, minsup tuyệt đối bằng 3.
+Xét CSDL trong Bảng \ref{tab:prune-db} với $\theta = 0.5$, minsup tuyệt đối bằng 3.
 
 \begin{table}[H]
     \centering
-    \caption{CSDL thiết kế để tạo FP-tree một nhánh.}
-    \label{tab:single-path-db}
+    \caption{CSDL thiết kế để kích hoạt phép tỉa theo siêu tập trong FP-Max.}
+    \label{tab:prune-db}
     \begin{tabular}{c c}
         \toprule
         Giao dịch & Item \\
         \midrule
-        $T_1$ & $\{A,B,C,D\}$ \\
-        $T_2$ & $\{A,B,C\}$ \\
-        $T_3$ & $\{A,B\}$ \\
-        $T_4$ & $\{A,B,C\}$ \\
-        $T_5$ & $\{A,B,C,D\}$ \\
+        $T_1$ & $\{a,b,c\}$ \\
+        $T_2$ & $\{a,b,c\}$ \\
+        $T_3$ & $\{a,b,c\}$ \\
+        $T_4$ & $\{a,b,d\}$ \\
+        $T_5$ & $\{a,b,d\}$ \\
+        $T_6$ & $\{a,b,d\}$ \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-Support của các item là $\operatorname{sup}(A)=5$, $\operatorname{sup}(B)=5$, $\operatorname{sup}(C)=4$, $\operatorname{sup}(D)=2$. Item $D$ bị loại vì support nhỏ hơn 3. Sau khi tỉa, mọi giao dịch đều có dạng tiền tố của $[A,B,C]$, nên FP-tree chỉ còn một đường:
+Support của các item là $\operatorname{sup}(a)=6$, $\operatorname{sup}(b)=6$, $\operatorname{sup}(c)=3$, $\operatorname{sup}(d)=3$; tất cả đều đạt ngưỡng. Thứ tự dựng cây theo support giảm dần là $a,b,c,d$, cho FP-tree:
 \[
-    root \rightarrow A:5 \rightarrow B:5 \rightarrow C:4.
+    root \rightarrow a:6 \rightarrow b:6 \rightarrow \{\,c:3,\ d:3\,\}.
 \]
+Vì node $b$ có hai con, cây không phải single-path nên thuật toán đi vào vòng đệ quy theo từng item. Header được duyệt theo support tăng dần: $c,d,a,b$ (hai item hiếm $c,d$ trước, hai item phổ biến $a,b$ sau). Bảng \ref{tab:prune-trace} ghi lại diễn biến.
 
-Với single-path, mọi tập con không rỗng của $\{A,B,C\}$ đều phổ biến. Nếu cần toàn bộ frequent itemsets, support của mỗi itemset bằng count nhỏ nhất trên các node thuộc itemset đó:
-\[
-\begin{aligned}
-&\{A\}:5,\ \{B\}:5,\ \{C\}:4,\\
-&\{A,B\}:5,\ \{A,C\}:4,\ \{B,C\}:4,\\
-&\{A,B,C\}:4.
-\end{aligned}
-\]
+\begin{table}[H]
+    \centering
+    \caption{Vòng đệ quy FP-Max trên CSDL Bảng \ref{tab:prune-db}. Hai item cuối bị tỉa nhờ kiểm tra siêu tập.}
+    \label{tab:prune-trace}
+    \small
+    \begin{tabular}{c c c c l}
+        \toprule
+        Head & Conditional pattern base & $head\cup tail$ & Hành động & MFI sau bước \\
+        \midrule
+        $c$ & $(a,b):3$ & $\{a,b,c\}$ & dựng cây, candidate $\{a,b,c\}$ & $\{a,b,c\}$ \\
+        $d$ & $(a,b):3$ & $\{a,b,d\}$ & dựng cây, candidate $\{a,b,d\}$ & $\{a,b,c\},\{a,b,d\}$ \\
+        $a$ & $\emptyset$ & $\{a\}$ & $\{a\}\subseteq\{a,b,c\}$ $\Rightarrow$ tỉa & $\{a,b,c\},\{a,b,d\}$ \\
+        $b$ & $(a):6$ & $\{a,b\}$ & $\{a,b\}\subseteq\{a,b,c\}$ $\Rightarrow$ tỉa & $\{a,b,c\},\{a,b,d\}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
-Tuy nhiên với FP-Max, ta không cần xuất toàn bộ bảy tập trên. Vì $\{A,B,C\}:4$ là siêu tập phổ biến của mọi tập còn lại, maximal frequent itemset duy nhất là $\{A,B,C\}:4$. Đây là lý do single-path đặc biệt hữu ích cho FP-Max: thuật toán có thể thêm thẳng head hợp với đường đi vào MFI list, thay vì sinh mọi tập con rồi lọc lại.
+Hai item hiếm $c$ và $d$ được xử lý trước, mỗi item có conditional pattern base $(a,b):3$ nên sinh hai tối đại $\{a,b,c\}$ và $\{a,b,d\}$. Khi đến item $b$, conditional pattern base là $(a):6$ cho tail $\{a\}$; vì $head \cup tail = \{a,b\}$ đã là tập con của MFI $\{a,b,c\}$, thuật toán cắt cả nhánh và \emph{không} dựng conditional FP-tree cho $b$ --- đây chính là chỗ tỉa tiết kiệm công sức. Item $a$ tương tự bị tỉa với $head\cup tail=\{a\}$. Tập kết quả là $\{a,b,c\}:3$ và $\{a,b,d\}:3$.
+
+Trường hợp này làm rõ điểm khác biệt cốt lõi giữa FP-Max và FP-Growth. FP-Growth buộc phải xuất ra mọi tập phổ biến --- ở đây gồm $\{a\},\{b\},\{a,b\},\{a,c\},\{b,c\},\{a,b,c\},\dots$ với tổng cộng mười tập --- trong khi FP-Max chỉ giữ hai tối đại và bỏ qua phần lớn không gian nhờ phép tỉa. Cực điểm của hiệu ứng này là khi FP-tree co thành một đường đi dài $k$: FP-Growth sinh $2^k-1$ tập phổ biến, còn FP-Max nhận diện single-path và trả về đúng một tối đại. Đây là lý do FP-Max đặc biệt hiệu quả trên dữ liệu dày, nơi số tập phổ biến lớn theo cấp số mũ nhưng số tập tối đại nhỏ hơn nhiều.

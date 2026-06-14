@@ -56,7 +56,7 @@ function main()
 
     out = joinpath(RESULTS, "memory.csv")
     open(out, "w") do io
-        println(io, "dataset,minsup,algo,peak_rss_bytes,peak_rss_mb,n_itemsets")
+        println(io, "dataset,minsup,algo,peak_rss_bytes,peak_rss_mb,n_maximal")
         for r in rows
             println(io, join(r, ","))
         end

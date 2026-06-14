@@ -36,9 +36,9 @@ function fig_time_and_count()
 
         ar = [r for r in drows if r[findfirst(==("algo"), header)] == "opt"]
         x = fnum.(col(header, ar, "minsup"))
-        y = fnum.(col(header, ar, "n_itemsets"))
-        pc = plot(x, y; marker = :square, title = "#Frequent itemsets vs minsup — $ds",
-                  xlabel = "minsup", ylabel = "#itemsets", yscale = :log10, legend = false)
+        y = fnum.(col(header, ar, "n_maximal"))
+        pc = plot(x, y; marker = :square, title = "#Maximal itemsets vs minsup — $ds",
+                  xlabel = "minsup", ylabel = "#maximal", yscale = :log10, legend = false)
         savefig(pc, joinpath(FIGURES, "count_$(ds).png"))
     end
 end
