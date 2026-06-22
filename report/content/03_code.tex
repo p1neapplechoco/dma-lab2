@@ -91,7 +91,7 @@ Body::Int64
 
 Không có biến nào bị suy ra kiểu \texttt{Any}; union duy nhất xuất hiện là trạng thái iterator chuẩn của vòng lặp \texttt{for} trong Julia, không phải bất ổn kiểu. Lệnh \texttt{@inferred FrequentItemsetMining.\_item\_support(nodes)} chạy không lỗi và suy ra \texttt{Int64}, xác nhận hàm nóng này type-stable.
 
-Tính ổn định kiểu của bộ máy FP-tree này được cả hai chiến lược khai thác maximal sử dụng: baseline naive-maximal chạy thẳng trên \texttt{FPGrowthOpt}, còn FP-Max dùng lại cùng cơ chế cây và cơ sở mẫu điều kiện. Hiệu quả tổng thể của tối ưu được đo ở Mục \ref{sec:implementation-fpmax} và Mục \ref{sec:evaluation}.
+Tính ổn định kiểu của cơ chế FP-tree này được cả hai chiến lược khai thác maximal sử dụng: baseline naive-maximal chạy thẳng trên \texttt{FPGrowthOpt}, còn FP-Max dùng lại cùng cơ chế cây và cơ sở mẫu điều kiện. Hiệu quả tổng thể của tối ưu được đo ở Mục \ref{sec:implementation-fpmax} và Mục \ref{sec:evaluation}.
 
 \subsection{Cài đặt FP-Max và baseline naive-maximal}
 \label{sec:implementation-fpmax}
